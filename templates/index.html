@@ -7,234 +7,203 @@
 
 <meta
 name="viewport"
-content="width=device-width,initial-scale=1,viewport-fit=cover"
+content="width=device-width,initial-scale=1"
 >
 
-<title>NEXO // Historical Analytics v3</title>
+<title>NEXO Historical Analytics</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 :root{
-    --bg:#03070c;
-    --panel:#08131d;
-    --panel2:#0b1924;
-    --cyan:#00e5ff;
-    --green:#00ff88;
-    --yellow:#ffe600;
-    --red:#ff4d67;
-    --text:#dffcff;
-    --muted:#7e96ad;
-    --line:#153247;
+--bg:#03070d;
+--panel:#08131d;
+--cyan:#00e5ff;
+--green:#00ff88;
+--yellow:#ffe600;
+--red:#ff5068;
+--text:#e5fbff;
+--muted:#7890a6;
+--line:#163143;
 }
 
 *{
-    box-sizing:border-box;
+box-sizing:border-box;
 }
 
 body{
-    margin:0;
-    background:
-    radial-gradient(
-        circle at top,
-        #0b2435 0,
-        #03070c 58%
-    );
-    color:var(--text);
-    font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+margin:0;
+background:
+radial-gradient(
+circle at top,
+#0b2638,
+#03070d 60%
+);
+color:var(--text);
+font-family:
+ui-monospace,
+SFMono-Regular,
+Menlo,
+monospace;
 }
 
 header{
-    padding:22px 18px;
-    border-bottom:1px solid var(--line);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:15px;
-    flex-wrap:wrap;
+padding:20px;
+border-bottom:1px solid var(--line);
+display:flex;
+justify-content:space-between;
+gap:15px;
+flex-wrap:wrap;
 }
 
 .brand{
-    color:var(--cyan);
-    font-size:22px;
-    font-weight:900;
-    letter-spacing:.08em;
-    text-shadow:
-    0 0 15px #00e5ff55;
+color:var(--cyan);
+font-size:20px;
+font-weight:900;
 }
 
-.status{
-    color:var(--green);
+.online{
+color:var(--green);
 }
 
 main{
-    max-width:1200px;
-    margin:auto;
-    padding:18px;
+max-width:1200px;
+margin:auto;
+padding:15px;
 }
 
 .grid{
-    display:grid;
-    grid-template-columns:
-    repeat(12,1fr);
-    gap:15px;
+display:grid;
+grid-template-columns:
+repeat(12,1fr);
+gap:14px;
 }
 
 .card{
-    grid-column:span 4;
-    background:
-    linear-gradient(
-        145deg,
-        #08131dee,
-        #050c13ee
-    );
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:18px;
-    box-shadow:
-    0 0 30px #00e5ff08;
+grid-column:span 4;
+background:#07131cee;
+border:1px solid var(--line);
+border-radius:15px;
+padding:16px;
 }
 
 .wide{
-    grid-column:span 8;
+grid-column:span 8;
 }
 
 .full{
-    grid-column:1/-1;
+grid-column:1/-1;
 }
 
 h2{
-    color:var(--cyan);
-    font-size:14px;
-    letter-spacing:.13em;
-    margin-top:0;
+font-size:13px;
+color:var(--cyan);
+letter-spacing:.1em;
 }
 
-select,
-button{
-    width:100%;
-    padding:14px;
-    margin-top:10px;
-    border-radius:10px;
-    border:1px solid #00e5ff66;
-    background:#06141d;
-    color:var(--cyan);
-    font:inherit;
+button,
+select{
+width:100%;
+padding:13px;
+margin-top:9px;
+border-radius:9px;
+border:1px solid #00e5ff66;
+background:#06151e;
+color:var(--cyan);
+font:inherit;
 }
 
 button{
-    cursor:pointer;
+cursor:pointer;
 }
 
 button:hover{
-    background:#07303d;
-}
-
-button.danger{
-    color:#ff7185;
-    border-color:#ff718566;
+background:#07303b;
 }
 
 .metric{
-    font-size:38px;
-    color:var(--green);
-    margin:10px 0;
+font-size:35px;
+color:var(--green);
+margin:10px 0;
 }
 
 .muted{
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.7;
+font-size:12px;
+color:var(--muted);
+line-height:1.6;
 }
 
-.market-name{
-    color:white;
-    font-size:23px;
-    margin-top:10px;
-}
-
-.badge{
-    display:inline-block;
-    padding:7px 10px;
-    border-radius:8px;
-    background:#003b2b;
-    color:var(--green);
-    margin-top:8px;
-}
-
-.log{
-    height:180px;
-    overflow:auto;
-    background:#020509;
-    border-radius:10px;
-    padding:13px;
-    color:#76ffb0;
-    font-size:11px;
-    white-space:pre-wrap;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:12px;
-}
-
-td,
-th{
-    padding:10px 7px;
-    border-bottom:1px solid var(--line);
-    text-align:left;
-}
-
-th{
-    color:var(--cyan);
-}
-
-.panel{
-    color:#fff;
-    font-weight:bold;
-}
-
-.rank{
-    color:var(--green);
+.status{
+display:inline-block;
+margin-top:10px;
+padding:7px 10px;
+border-radius:8px;
+background:#003626;
+color:var(--green);
 }
 
 .warning{
-    border-left:3px solid var(--yellow);
-    padding:12px;
-    background:#332d000f;
-    color:#c8d2da;
-    font-size:12px;
-    line-height:1.6;
+padding:12px;
+margin:10px 0;
+border-left:3px solid var(--yellow);
+background:#171500;
+font-size:11px;
+line-height:1.6;
+color:#cdd6dc;
 }
 
-canvas{
-    max-height:350px;
+.log{
+height:160px;
+overflow:auto;
+background:#020508;
+padding:12px;
+font-size:11px;
+color:#70ffb0;
+white-space:pre-wrap;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px;
+}
+
+th,
+td{
+padding:9px 6px;
+border-bottom:1px solid var(--line);
+text-align:left;
+}
+
+th{
+color:var(--cyan);
+}
+
+.green{
+color:var(--green);
+}
+
+.panel{
+font-weight:bold;
+color:white;
 }
 
 @media(max-width:800px){
 
-    main{
-        padding:10px;
-    }
+.card,
+.wide{
+grid-column:1/-1;
+}
 
-    .card,
-    .wide{
-        grid-column:1/-1;
-    }
+main{
+padding:9px;
+}
 
-    .brand{
-        font-size:17px;
-    }
+.brand{
+font-size:16px;
+}
 
-    .metric{
-        font-size:32px;
-    }
 }
 
 </style>
@@ -246,11 +215,11 @@ canvas{
 <header>
 
 <div class="brand">
-NEXO // MATHEMATICAL HISTORICAL ANALYTICS
+NEXO // HISTORICAL ANALYTICS
 </div>
 
-<div class="status">
-● ANALYTICS ONLINE
+<div class="online">
+● ONLINE
 </div>
 
 </header>
@@ -259,15 +228,9 @@ NEXO // MATHEMATICAL HISTORICAL ANALYTICS
 
 <div class="grid">
 
-<!-- MARKET -->
-
 <section class="card wide">
 
 <h2>🎯 MARKET</h2>
-
-<div class="muted">
-Select historical market
-</div>
 
 <select id="market">
 
@@ -275,105 +238,65 @@ Select historical market
 Kalyan
 </option>
 
-<option value="main-bazar">
+<option value="main_bazar">
 Main Bazar
 </option>
 
 </select>
 
-<div
-id="marketName"
-class="market-name"
->
-Kalyan
-</div>
-
-<button onclick="syncMarket()">
-⚡ FETCH FULL MARKET HISTORY
+<button onclick="sync()">
+⚡ FETCH FULL HISTORY
 </button>
 
-<button onclick="loadAnalysis()">
+<button onclick="analysis()">
 🔄 REFRESH ANALYSIS
 </button>
 
-</section>
-
-
-<!-- SOURCE -->
-
-<section class="card">
-
-<h2>🔗 SOURCE</h2>
-
-<div
-id="source"
-class="muted"
->
-https://dpbossss.boston/
-</div>
-
-<div
-id="syncStatus"
-class="badge"
->
+<div id="syncStatus" class="status">
 READY
 </div>
 
 </section>
 
 
-<!-- DATABASE -->
-
 <section class="card">
 
-<h2>📦 DATABASE</h2>
+<h2>DATABASE</h2>
 
-<div
-id="records"
-class="metric"
->
+<div id="records" class="metric">
 0
 </div>
 
 <div class="muted">
-Stored historical panel records
+Historical records
 </div>
 
 </section>
 
 
-<!-- UNIQUE -->
-
 <section class="card">
 
-<h2>🔢 UNIQUE</h2>
+<h2>UNIQUE PANELS</h2>
 
-<div
-id="unique"
-class="metric"
->
+<div id="unique" class="metric">
 0
 </div>
 
 <div class="muted">
-Unique panel values
+Unique historical values
 </div>
 
 </section>
 
-
-<!-- FREQUENCY -->
 
 <section class="card wide">
 
-<h2>📊 PANEL FREQUENCY</h2>
+<h2>📊 FREQUENCY</h2>
 
-<canvas id="frequencyChart"></canvas>
+<canvas id="chart"></canvas>
 
 </section>
 
-
-<!-- DIGITS -->
 
 <section class="card">
 
@@ -382,36 +305,31 @@ Unique panel values
 <table>
 
 <thead>
-
 <tr>
 <th>Digit</th>
 <th>Count</th>
 </tr>
-
 </thead>
 
-<tbody id="digits"></tbody>
+<tbody id="digits">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- RANKING -->
-
 <section class="card wide">
 
-<h2>
-🧠 NEXO STATISTICAL CANDIDATE RANKING
-</h2>
+<h2>🧠 NEXO ALGORITHM RANKING</h2>
 
 <div class="warning">
 
-Ranking is calculated from historical frequency,
-recent frequency and gap statistics.
+This ranking applies the supplied historical-analysis
+methodology: frequency, recent frequency, repetition,
+gap, digit-position distribution and consistency.
 
-It is descriptive statistical analysis only.
-It does not establish or guarantee the next
+It is a statistical ranking, not a guaranteed future
 gambling result.
 
 </div>
@@ -423,27 +341,24 @@ gambling result.
 <tr>
 <th>#</th>
 <th>Panel</th>
-<th>Frequency</th>
-<th>Gap</th>
 <th>Score</th>
+<th>Freq</th>
+<th>Gap</th>
 </tr>
 
 </thead>
 
-<tbody id="ranking"></tbody>
+<tbody id="ranking">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- GAP -->
-
 <section class="card wide">
 
-<h2>
-⏱ GAP ANALYSIS
-</h2>
+<h2>⏱ GAP ANALYSIS</h2>
 
 <table>
 
@@ -457,42 +372,32 @@ gambling result.
 
 </thead>
 
-<tbody id="gaps"></tbody>
+<tbody id="gaps">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- LOG -->
-
 <section class="card full">
 
-<h2>
-🛰 ANALYSIS LOG
-</h2>
+<h2>🧪 BACKTEST</h2>
 
-<div id="log" class="log">
-SYSTEM READY
+<div id="backtest" class="muted">
+Waiting for sufficient historical data.
 </div>
 
 </section>
 
 
-<!-- CLEAR -->
-
 <section class="card full">
 
-<h2>
-⚙ DATABASE CONTROL
-</h2>
+<h2>🛰 SYSTEM LOG</h2>
 
-<button
-class="danger"
-onclick="clearDatabase()"
->
-🗑 CLEAR CURRENT MARKET DATABASE
-</button>
+<div id="log" class="log">
+NEXO READY
+</div>
 
 </section>
 
@@ -503,435 +408,369 @@ onclick="clearDatabase()"
 
 <script>
 
-let frequencyChart = null;
+let chart=null;
 
 
-function log(message){
+function writeLog(message){
 
-    const box =
-        document.getElementById("log");
+const box=
+document.getElementById("log");
 
-    const time =
-        new Date().toLocaleTimeString();
+box.textContent +=
+"\n["+
+new Date().toLocaleTimeString()+
+"] "+
+message;
 
-    box.textContent +=
-        "\n[" + time + "] " + message;
-
-    box.scrollTop =
-        box.scrollHeight;
-}
-
-
-function currentMarket(){
-
-    return document
-        .getElementById("market")
-        .value;
-}
-
-
-function updateMarketName(){
-
-    const market =
-        currentMarket();
-
-    document
-        .getElementById("marketName")
-        .textContent =
-        market === "kalyan"
-        ? "Kalyan"
-        : "Main Bazar";
+box.scrollTop=
+box.scrollHeight;
 
 }
 
 
-async function syncMarket(){
+function market(){
 
-    const market =
-        currentMarket();
-
-    updateMarketName();
-
-    const status =
-        document.getElementById(
-            "syncStatus"
-        );
-
-    status.textContent =
-        "FETCHING...";
-
-    log(
-        "Starting full historical sync: "
-        + market
-    );
-
-    try{
-
-        const response =
-            await fetch(
-                "/api/sync/" + market
-            );
-
-        const data =
-            await response.json();
-
-        if(!data.ok){
-
-            throw new Error(
-                data.error ||
-                "Sync failed"
-            );
-
-        }
-
-        status.textContent =
-            "SYNC COMPLETE";
-
-        document
-            .getElementById("source")
-            .textContent =
-            data.source;
-
-        log(
-            "SOURCE: " +
-            data.source
-        );
-
-        log(
-            "VALUES FOUND: " +
-            data.fetched
-        );
-
-        log(
-            "NEW DATABASE RECORDS: " +
-            data.new_records
-        );
-
-        render(data.analysis);
-
-    }catch(error){
-
-        status.textContent =
-            "ERROR";
-
-        log(
-            "FETCH ERROR: " +
-            error.message
-        );
-
-    }
+return document
+.getElementById("market")
+ .value;
 
 }
 
 
-async function loadAnalysis(){
+async function sync(){
 
-    const market =
-        currentMarket();
+const m=market();
 
-    try{
+document
+.getElementById("syncStatus")
+ .textContent=
+"FETCHING...";
 
-        const response =
-            await fetch(
-                "/api/analysis/" + market
-            );
+writeLog(
+"Fetching full "+
+m+
+" historical dataset..."
+);
 
-        const data =
-            await response.json();
+try{
 
-        if(!data.ok){
+const response=
+await fetch(
+"/api/sync/"+m
+);
 
-            throw new Error(
-                data.error
-            );
+const data=
+await response.json();
 
-        }
+if(!data.ok){
 
-        render(
-            data.analysis
-        );
+throw new Error(
+data.error
+);
 
-        log(
-            "Analysis refreshed."
-        );
+}
 
-    }catch(error){
+writeLog(
+"Source values: "+
+data.fetched
+);
 
-        log(
-            "ANALYSIS ERROR: " +
-            error.message
-        );
+writeLog(
+"New database records: "+
+data.inserted
+);
 
-    }
+document
+.getElementById("syncStatus")
+ .textContent=
+"SYNC COMPLETE";
+
+render(
+data.analysis,
+data.backtest
+);
+
+}catch(error){
+
+document
+.getElementById("syncStatus")
+ .textContent=
+"ERROR";
+
+writeLog(
+"ERROR: "+
+error.message
+);
+
+}
 
 }
 
 
-function render(data){
+async function analysis(){
 
-    document
-        .getElementById("records")
-        .textContent =
-        data.records;
+const m=market();
 
-    document
-        .getElementById("unique")
-        .textContent =
-        data.unique;
+try{
 
+const response=
+await fetch(
+"/api/analysis/"+m
+);
 
-    // DIGITS
+const data=
+await response.json();
 
-    document
-        .getElementById("digits")
-        .innerHTML =
-        data.digit_frequency
-        .map(item => `
-            <tr>
-                <td>${item.digit}</td>
-                <td>${item.count}</td>
-            </tr>
-        `)
-        .join("");
+if(!data.ok){
 
+throw new Error(
+data.error
+);
 
-    // RANKING
+}
 
-    document
-        .getElementById("ranking")
-        .innerHTML =
-        data.ranking
-        .map((item,index) => `
-            <tr>
-                <td>${index + 1}</td>
+render(
+data.analysis,
+data.backtest
+);
 
-                <td class="panel">
-                    ${item.value}
-                </td>
+writeLog(
+"Analysis refreshed."
+);
 
-                <td>
-                    ${item.count}
-                </td>
+}catch(error){
 
-                <td>
-                    ${item.gap}
-                </td>
+writeLog(
+"ERROR: "+
+error.message
+);
 
-                <td class="rank">
-                    ${item.score}
-                </td>
-            </tr>
-        `)
-        .join("");
-
-
-    // GAP
-
-    document
-        .getElementById("gaps")
-        .innerHTML =
-        data.gap_analysis
-        .slice(0,30)
-        .map(item => `
-            <tr>
-
-                <td class="panel">
-                    ${item.value}
-                </td>
-
-                <td>
-                    ${item.count}
-                </td>
-
-                <td>
-                    ${item.gap}
-                </td>
-
-            </tr>
-        `)
-        .join("");
-
-
-    // CHART
-
-    const labels =
-        data.frequency
-        .slice(0,20)
-        .map(item =>
-            item.value
-        );
-
-    const values =
-        data.frequency
-        .slice(0,20)
-        .map(item =>
-            item.count
-        );
-
-
-    if(frequencyChart){
-
-        frequencyChart.destroy();
-
-    }
-
-
-    frequencyChart =
-        new Chart(
-            document
-                .getElementById(
-                    "frequencyChart"
-                ),
-            {
-                type:"bar",
-
-                data:{
-                    labels,
-
-                    datasets:[
-                        {
-                            label:
-                            "Historical occurrences",
-
-                            data:values,
-
-                            backgroundColor:
-                            "#00e5ff88",
-
-                            borderColor:
-                            "#00e5ff",
-
-                            borderWidth:1
-                        }
-                    ]
-                },
-
-                options:{
-
-                    responsive:true,
-
-                    plugins:{
-                        legend:{
-                            labels:{
-                                color:"#dffcff"
-                            }
-                        }
-                    },
-
-                    scales:{
-
-                        x:{
-                            ticks:{
-                                color:"#7e96ad"
-                            }
-                        },
-
-                        y:{
-                            ticks:{
-                                color:"#7e96ad"
-                            }
-                        }
-
-                    }
-
-                }
-
-            }
-        );
+}
 
 }
 
 
-async function clearDatabase(){
+function render(data,backtest){
 
-    const market =
-        currentMarket();
+document
+.getElementById("records")
+ .textContent=
+data.records;
 
-    const confirmed =
-        confirm(
-            "Clear all stored " +
-            market +
-            " historical records?"
-        );
+document
+.getElementById("unique")
+ .textContent=
+data.unique;
 
-    if(!confirmed){
-        return;
-    }
 
-    try{
+/* DIGITS */
 
-        const response =
-            await fetch(
-                "/api/clear/" + market,
-                {
-                    method:"POST"
-                }
-            );
+document
+.getElementById("digits")
+ .innerHTML=
+data.digits
+.map(x=>`
 
-        const data =
-            await response.json();
+<tr>
+<td>${x.digit}</td>
+<td>${x.count}</td>
+</tr>
 
-        if(!data.ok){
+`)
+.join("");
 
-            throw new Error(
-                data.error
-            );
 
-        }
+/* RANKING */
 
-        document
-            .getElementById("records")
-            .textContent = "0";
+document
+.getElementById("ranking")
+ .innerHTML=
+data.ranking
+.map((x,i)=>`
 
-        document
-            .getElementById("unique")
-            .textContent = "0";
+<tr>
 
-        document
-            .getElementById("ranking")
-            .innerHTML = "";
+<td>${i+1}</td>
 
-        document
-            .getElementById("gaps")
-            .innerHTML = "";
+<td class="panel">
+${x.panel}
+</td>
 
-        document
-            .getElementById("digits")
-            .innerHTML = "";
+<td class="green">
+${x.score}
+</td>
 
-        log(
-            "Database cleared."
-        );
+<td>
+${x.frequency}
+</td>
 
-    }catch(error){
+<td>
+${x.gap}
+</td>
 
-        log(
-            "CLEAR ERROR: " +
-            error.message
-        );
+</tr>
 
-    }
+`)
+.join("");
+
+
+/* GAPS */
+
+document
+.getElementById("gaps")
+ .innerHTML=
+data.gaps
+.slice(0,30)
+.map(x=>`
+
+<tr>
+
+<td class="panel">
+${x.panel}
+</td>
+
+<td>
+${x.count}
+</td>
+
+<td>
+${x.gap}
+</td>
+
+</tr>
+
+`)
+.join("");
+
+
+/* CHART */
+
+const labels=
+data.frequency
+.slice(0,20)
+.map(x=>x.panel);
+
+const values=
+data.frequency
+.slice(0,20)
+.map(x=>x.count);
+
+if(chart){
+
+chart.destroy();
+
+}
+
+chart=
+new Chart(
+document
+.getElementById("chart"),
+{
+type:"bar",
+
+data:{
+labels:labels,
+
+datasets:[{
+
+label:
+"Historical frequency",
+
+data:values,
+
+backgroundColor:
+"#00e5ff88",
+
+borderColor:
+"#00e5ff",
+
+borderWidth:1
+
+}]
+},
+
+options:{
+responsive:true,
+
+plugins:{
+legend:{
+labels:{
+color:"#dffcff"
+}
+}
+},
+
+scales:{
+
+x:{
+ticks:{
+color:"#7890a6"
+}
+},
+
+y:{
+ticks:{
+color:"#7890a6"
+}
+}
+
+}
+
+}
+
+}
+);
+
+
+/* BACKTEST */
+
+const box=
+document
+.getElementById("backtest");
+
+if(
+!backtest ||
+!backtest.available
+){
+
+box.textContent=
+backtest?.message ||
+"Not enough historical data.";
+
+return;
+
+}
+
+box.innerHTML=`
+
+Training records:
+<b>${backtest.training_records}</b>
+<br>
+
+Testing records:
+<b>${backtest.testing_records}</b>
+<br>
+
+Top historical candidates tested:
+<b>${backtest.top_candidates.length}</b>
+<br>
+
+Historical test hit rate:
+<b>${backtest.historical_hit_rate}%</b>
+
+`;
 
 }
 
 
 document
-    .getElementById("market")
-    .addEventListener(
-        "change",
-        () => {
+.getElementById("market")
+ .addEventListener(
+"change",
+analysis
+);
 
-            updateMarketName();
-
-            loadAnalysis();
-
-        }
-    );
-
-
-updateMarketName();
-
-loadAnalysis();
+analysis();
 
 </script>
 

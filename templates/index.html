@@ -1,668 +1,302 @@
 <!doctype html>
-
 <html lang="en">
-
 <head>
-
 <meta charset="utf-8">
-
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1"
->
-
-<title>
-NEXO // Kalyan Historical Analytics
-</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXO // Market Historical Analytics</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
 :root{
---bg:#05080d;
---panel:#09121c;
---cyan:#00e5ff;
---green:#00ff88;
---muted:#8295aa;
---line:#173043;
---danger:#ff4d6d;
+  --bg:#05080d;
+  --panel:#08111a;
+  --cyan:#00e5ff;
+  --green:#00ff88;
+  --muted:#7d91a8;
+  --line:#173043;
+  --red:#ff5577;
 }
 
-*{
-box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 body{
-
-margin:0;
-
-background:
-radial-gradient(
-circle at top,
-#0b1d2c,
-#05080d 65%
-);
-
-color:#dffcff;
-
-font-family:
-ui-monospace,
-SFMono-Regular,
-Menlo,
-monospace;
-
+  margin:0;
+  background:radial-gradient(circle at top,#0b1b29,#05080d 60%);
+  color:#dffcff;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 header{
-
-padding:22px;
-
-border-bottom:
-1px solid var(--line);
-
+  padding:22px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
 .brand{
-
-font-size:21px;
-
-font-weight:900;
-
-color:var(--cyan);
-
-text-shadow:
-0 0 18px #00e5ff55;
-
+  font-size:20px;
+  font-weight:800;
+  color:var(--cyan);
+  text-shadow:0 0 14px #00e5ff55;
 }
 
-.online{
-
-margin-top:10px;
-
-color:var(--green);
-
+.status{
+  color:var(--green);
 }
 
 main{
-
-max-width:1200px;
-
-margin:auto;
-
-padding:18px;
-
+  max-width:1200px;
+  margin:auto;
+  padding:18px;
 }
 
 .grid{
-
-display:grid;
-
-grid-template-columns:
-repeat(12,1fr);
-
-gap:15px;
-
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:14px;
 }
 
 .card{
-
-grid-column:
-span 4;
-
-background:
-#08111aee;
-
-border:
-1px solid var(--line);
-
-border-radius:16px;
-
-padding:18px;
-
-box-shadow:
-0 0 30px #00e5ff08;
-
+  grid-column:span 4;
+  background:#08111aee;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 0 25px #00e5ff08;
 }
 
-.wide{
-
-grid-column:
-span 8;
-
-}
-
-.full{
-
-grid-column:
-1/-1;
-
-}
+.wide{grid-column:span 8}
+.full{grid-column:1/-1}
 
 h2{
-
-color:var(--cyan);
-
-font-size:14px;
-
-letter-spacing:.12em;
-
+  font-size:13px;
+  color:var(--cyan);
+  letter-spacing:.12em;
 }
 
 select,
 button{
-
-width:100%;
-
-padding:14px;
-
-margin-top:9px;
-
-border-radius:10px;
-
-border:
-1px solid #00e5ff66;
-
-background:#06121b;
-
-color:#dffcff;
-
-font:inherit;
-
+  width:100%;
+  background:#06131c;
+  color:var(--cyan);
+  border:1px solid #00e5ff77;
+  padding:13px;
+  border-radius:9px;
+  font:inherit;
+  margin-top:8px;
 }
 
 button{
-
-color:var(--cyan);
-
-cursor:pointer;
-
+  cursor:pointer;
 }
 
 button:hover{
-
-background:#073440;
-
+  background:#073440;
 }
 
 .metric{
-
-font-size:34px;
-
-color:var(--green);
-
-margin:10px 0;
-
+  font-size:32px;
+  color:var(--green);
+  margin:8px 0;
 }
 
-.label{
-
-color:var(--muted);
-
-font-size:12px;
-
+.market-name{
+  font-size:22px;
+  color:#fff;
+  margin:12px 0;
 }
 
-.status{
-
-padding:12px;
-
-margin-top:10px;
-
-border-radius:9px;
-
-background:#031c12;
-
-color:var(--green);
-
+.url-box{
+  color:var(--muted);
+  font-size:11px;
+  word-break:break-all;
+  margin-top:10px;
 }
 
-.stat-grid{
-
-display:grid;
-
-grid-template-columns:
-1fr 1fr;
-
-gap:10px;
-
-}
-
-.stat{
-
-background:#050b12;
-
-border:
-1px solid var(--line);
-
-border-radius:10px;
-
-padding:12px;
-
+.muted{
+  color:var(--muted);
+  font-size:12px;
 }
 
 table{
-
-width:100%;
-
-border-collapse:
-collapse;
-
-font-size:12px;
-
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
 }
 
-th,
-td{
-
-padding:9px;
-
-border-bottom:
-1px solid var(--line);
-
-text-align:left;
-
+td,th{
+  padding:9px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
 }
 
 th{
-
-color:var(--cyan);
-
+  color:var(--cyan);
 }
 
 .log{
-
-height:170px;
-
-overflow:auto;
-
-background:#03070b;
-
-padding:12px;
-
-color:#7dffb4;
-
-font-size:11px;
-
-white-space:pre-wrap;
-
+  height:180px;
+  overflow:auto;
+  background:#03070b;
+  padding:12px;
+  color:#7dffb4;
+  font-size:11px;
+  white-space:pre-wrap;
 }
 
-.badge{
+.error{
+  color:var(--red);
+}
 
-display:inline-block;
-
-padding:6px 9px;
-
-border:
-1px solid var(--line);
-
-border-radius:7px;
-
-font-size:11px;
-
-color:var(--cyan);
-
-margin-right:5px;
-
+.success{
+  color:var(--green);
 }
 
 @media(max-width:800px){
-
-.card,
-.wide{
-
-grid-column:
-1/-1;
-
+  .card,
+  .wide{
+    grid-column:1/-1;
+  }
 }
-
-}
-
 </style>
-
 </head>
-
 
 <body>
 
-
 <header>
-
-<div class="brand">
-
-NEXO // MATHEMATICAL MARKET ANALYTICS
-
-</div>
-
-<div class="online">
-
-● ANALYTICS ONLINE
-
-</div>
-
+  <div class="brand">NEXO // MATHEMATICAL MARKET ANALYTICS</div>
+  <div class="status">● ANALYTICS ONLINE</div>
 </header>
-
 
 <main>
 
-
 <div class="grid">
 
-
-<!-- MARKET -->
-
+<!-- MARKET SELECTOR -->
 <section class="card wide">
 
-<h2>
+<h2>🎯 MARKET</h2>
 
-🎯 MARKET SELECTOR
-
-</h2>
-
-<div class="label">
-
+<div class="muted">
 Select historical market
-
 </div>
 
 <select id="market">
+  <option value="kalyan">
+    Kalyan
+  </option>
 
-<option value="kalyan-main-bazar">
-
-Kalyan Main Bazar
-
-</option>
-
-<option value="main-bazar">
-
-Main Bazar
-
-</option>
-
+  <option value="main-bazar">
+    Main Bazar
+  </option>
 </select>
 
-<button onclick="sync()">
+<div id="marketName" class="market-name">
+Kalyan
+</div>
 
-⚡ FETCH HISTORICAL DATA
+<div id="sourceUrl" class="url-box">
+https://dpbossss.boston/panel-chart-record/kalyan.php
+</div>
 
+<button onclick="fetchMarket()">
+⚡ FETCH MARKET HISTORY
 </button>
 
 </section>
 
 
-<!-- STATUS -->
-
+<!-- DATASET -->
 <section class="card">
 
-<h2>
+<h2>🚀 DATA SYNC</h2>
 
-🚀 DATA SYNC
+<div id="syncStatus" class="muted">
+Waiting for fetch...
+</div>
 
-</h2>
+<div id="records" class="metric">
+—
+</div>
 
-<div
-id="status"
-class="status">
-
-● READY
-
+<div class="muted">
+Historical values extracted
 </div>
 
 </section>
 
 
-<!-- RECORD COUNT -->
-
+<!-- STATISTICS -->
 <section class="card">
 
-<h2>
+<h2>📊 STATISTICS</h2>
 
-📊 REAL RECORDS
-
-</h2>
-
-<div class="stat-grid">
-
-<div class="stat">
-
-<div
-id="jodiCount"
-class="metric">
-
-—
-
+<div class="muted">
+Frequency
+<br>
+Gap analysis
+<br>
+Digit distribution
+<br>
+Descriptive statistics
 </div>
 
-<div class="label">
-
-JODI RECORDS
-
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div
-id="panelCount"
-class="metric">
-
-—
-
-</div>
-
-<div class="label">
-
-PANEL RECORDS
-
-</div>
-
-</div>
-
+<div id="engineStatus" class="metric">
+READY
 </div>
 
 </section>
 
 
-<!-- JODI CHART -->
-
+<!-- CHART -->
 <section class="card wide">
 
-<h2>
+<h2>📈 PANEL FREQUENCY</h2>
 
-🔢 JODI FREQUENCY
-
-</h2>
-
-<canvas
-id="jodiChart">
-</canvas>
-
-</section>
-
-
-<!-- PANEL CHART -->
-
-<section class="card wide">
-
-<h2>
-
-📊 PANEL / PAANA FREQUENCY
-
-</h2>
-
-<canvas
-id="panelChart">
-</canvas>
-
-</section>
-
-
-<!-- TOP JODI -->
-
-<section class="card">
-
-<h2>
-
-TOP JODI
-
-</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Jodi</th>
-
-<th>Count</th>
-
-</tr>
-
-</thead>
-
-<tbody id="jodiTable">
-
-</tbody>
-
-</table>
-
-</section>
-
-
-<!-- TOP PANEL -->
-
-<section class="card">
-
-<h2>
-
-TOP PANEL / PAANA
-
-</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Panel</th>
-
-<th>Count</th>
-
-</tr>
-
-</thead>
-
-<tbody id="panelTable">
-
-</tbody>
-
-</table>
+<canvas id="chart"></canvas>
 
 </section>
 
 
 <!-- DIGITS -->
-
 <section class="card">
 
-<h2>
-
-DIGIT DISTRIBUTION
-
-</h2>
+<h2>DIGIT DISTRIBUTION</h2>
 
 <table>
 
 <thead>
-
 <tr>
-
 <th>Digit</th>
-
-<th>Jodi</th>
-
-<th>Panel</th>
-
+<th>Count</th>
 </tr>
-
 </thead>
 
-<tbody id="digits">
-
-</tbody>
+<tbody id="digits"></tbody>
 
 </table>
 
 </section>
 
 
-<!-- GAP -->
-
+<!-- TOP PANELS -->
 <section class="card wide">
 
-<h2>
-
-⏱ HISTORICAL GAP ANALYSIS
-
-</h2>
+<h2>🔢 HISTORICAL PANELS</h2>
 
 <table>
 
 <thead>
-
 <tr>
-
-<th>Value</th>
-
-<th>Current gap</th>
-
-</tr>
-
-</thead>
-
-<tbody id="gaps">
-
-</tbody>
-
-</table>
-
-</section>
-
-
-<!-- RECENT -->
-
-<section class="card full">
-
-<h2>
-
-📅 HISTORICAL RECORDS
-
-</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>#</th>
-
-<th>Jodi</th>
-
 <th>Panel / Paana</th>
-
+<th>Occurrences</th>
 </tr>
-
 </thead>
 
-<tbody id="recent">
-
-</tbody>
+<tbody id="top"></tbody>
 
 </table>
 
@@ -670,25 +304,13 @@ DIGIT DISTRIBUTION
 
 
 <!-- LOG -->
-
 <section class="card full">
 
-<h2>
+<h2>🧠 ANALYSIS LOG</h2>
 
-🧠 ANALYSIS LOG
-
-</h2>
-
-<div
-id="log"
-class="log">
-
+<div id="log" class="log">
 SYSTEM READY
-
-Select market.
-
-Press FETCH HISTORICAL DATA.
-
+Select Kalyan or Main Bazar and press FETCH.
 </div>
 
 </section>
@@ -696,16 +318,13 @@ Press FETCH HISTORICAL DATA.
 
 <section class="card full">
 
-<div class="label">
-
-Historical descriptive statistics only.
-Frequency and gap analysis cannot guarantee
-a future gambling result.
-
-</div>
+<p class="muted">
+Historical descriptive analysis only. Frequency and pattern statistics
+describe past observations and do not guarantee or determine a future
+gambling result.
+</p>
 
 </section>
-
 
 </div>
 
@@ -714,407 +333,304 @@ a future gambling result.
 
 <script>
 
-let jodiChart = null;
+const MARKETS = {
 
-let panelChart = null;
+  "kalyan": {
+    name: "Kalyan",
+    url: "https://dpbossss.boston/panel-chart-record/kalyan.php"
+  },
+
+  "main-bazar": {
+    name: "Main Bazar",
+    url: "https://dpbossss.boston/panel-chart-record/main-bazar.php"
+  }
+
+};
+
+let chart = null;
 
 
-function log(text){
+// -------------------------------------
+// MARKET CHANGE
+// -------------------------------------
 
-const box =
-document.getElementById("log");
+document.getElementById("market")
+.addEventListener("change", updateMarket);
 
-box.textContent +=
-"\n" + text;
 
-box.scrollTop =
-box.scrollHeight;
+function updateMarket(){
+
+  const key =
+    document.getElementById("market").value;
+
+  const market =
+    MARKETS[key];
+
+  document.getElementById("marketName")
+    .textContent = market.name;
+
+  document.getElementById("sourceUrl")
+    .textContent = market.url;
+
+  document.getElementById("records")
+    .textContent = "—";
+
+  document.getElementById("engineStatus")
+    .textContent = "READY";
+
+  document.getElementById("syncStatus")
+    .textContent = "Waiting for fetch...";
+
+  log("MARKET SELECTED: " + market.name);
+}
+
+
+// -------------------------------------
+// LOG
+// -------------------------------------
+
+function log(message){
+
+  const box =
+    document.getElementById("log");
+
+  const time =
+    new Date().toLocaleTimeString();
+
+  box.textContent +=
+    "\n[" + time + "] " + message;
+
+  box.scrollTop =
+    box.scrollHeight;
+}
+
+
+// -------------------------------------
+// FETCH MARKET
+// -------------------------------------
+
+async function fetchMarket(){
+
+  const key =
+    document.getElementById("market").value;
+
+  const market =
+    MARKETS[key];
+
+  document.getElementById("syncStatus")
+    .textContent = "Fetching...";
+
+  document.getElementById("engineStatus")
+    .textContent = "RUNNING";
+
+  log("--------------------------------");
+  log("MARKET: " + market.name);
+  log("SOURCE: " + market.url);
+  log("REQUESTING HISTORICAL DATA...");
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/sync?market=" +
+        encodeURIComponent(key)
+      );
+
+    const data =
+      await response.json();
+
+    if(!data.ok){
+
+      throw new Error(
+        data.error || "Unknown server error"
+      );
+
+    }
+
+    document.getElementById("syncStatus")
+      .innerHTML =
+      '<span class="success">● SYNC COMPLETE</span>';
+
+    document.getElementById("records")
+      .textContent =
+      data.analysis.records;
+
+    document.getElementById("engineStatus")
+      .textContent =
+      "LIVE";
+
+    log("SOURCE OK");
+    log("MARKET: " + data.market);
+    log("ROWS FOUND: " + data.rows_found);
+    log("3-DIGIT TOKENS: " +
+        data.analysis.records);
+
+    renderDigits(
+      data.analysis.digit_frequency
+    );
+
+    renderPanels(
+      data.analysis.top_panels
+    );
+
+    renderChart(
+      data.analysis.top_panels
+    );
+
+  }catch(error){
+
+    document.getElementById("syncStatus")
+      .innerHTML =
+      '<span class="error">● FETCH ERROR</span>';
+
+    document.getElementById("engineStatus")
+      .textContent =
+      "ERROR";
+
+    log("ERROR: " + error.message);
+  }
 
 }
 
 
-function chart(
+// -------------------------------------
+// DIGIT TABLE
+// -------------------------------------
 
-id,
-oldChart,
-labels,
-values,
-label,
-color
+function renderDigits(items){
 
-){
+  document.getElementById("digits")
+    .innerHTML =
+    items.map(item => {
 
-if(oldChart){
+      return `
+        <tr>
+          <td>${item.digit}</td>
+          <td>${item.count}</td>
+        </tr>
+      `;
 
-oldChart.destroy();
-
-}
-
-return new Chart(
-
-document.getElementById(id),
-
-{
-
-type:"bar",
-
-data:{
-
-labels:labels,
-
-datasets:[{
-
-label:label,
-
-data:values,
-
-backgroundColor:
-color + "99",
-
-borderColor:
-color,
-
-borderWidth:1
-
-}]
-
-},
-
-options:{
-
-responsive:true,
-
-plugins:{
-
-legend:{
-
-labels:{
-color:"#dffcff"
-}
-
-}
-
-},
-
-scales:{
-
-x:{
-
-ticks:{
-color:"#8295aa"
-}
-
-},
-
-y:{
-
-beginAtZero:true,
-
-ticks:{
-color:"#8295aa"
-}
-
-}
-
-}
-
-}
-
-}
-
-);
+    }).join("");
 
 }
 
 
-async function sync(){
+// -------------------------------------
+// PANEL TABLE
+// -------------------------------------
 
-const market =
-document.getElementById(
-"market"
-).value;
+function renderPanels(items){
 
+  document.getElementById("top")
+    .innerHTML =
+    items.map(item => {
 
-document.getElementById(
-"status"
-).textContent =
-"● FETCHING...";
+      return `
+        <tr>
+          <td>${item.value}</td>
+          <td>${item.count}</td>
+        </tr>
+      `;
 
-
-document.getElementById(
-"log"
-).textContent =
-"SYSTEM STARTED";
-
-
-log(
-"MARKET: " +
-market
-);
-
-log(
-"Downloading Jodi chart..."
-);
-
-
-try{
-
-const response =
-await fetch(
-"/api/sync?market=" +
-encodeURIComponent(market)
-);
-
-
-const data =
-await response.json();
-
-
-if(!data.ok){
-
-throw new Error(
-data.error
-);
+    }).join("");
 
 }
 
 
-log(
-"Jodi records: " +
-data.records.jodi
-);
+// -------------------------------------
+// CHART
+// -------------------------------------
 
-log(
-"Panel records: " +
-data.records.panel
-);
+function renderChart(items){
 
+  const labels =
+    items
+      .slice(0,12)
+      .map(x => x.value);
 
-document.getElementById(
-"jodiCount"
-).textContent =
-data.records.jodi;
+  const values =
+    items
+      .slice(0,12)
+      .map(x => x.count);
 
 
-document.getElementById(
-"panelCount"
-).textContent =
-data.records.panel;
+  if(chart){
 
+    chart.destroy();
 
-document.getElementById(
-"status"
-).textContent =
-"● SYNC COMPLETE";
+  }
 
 
-/* JODI */
+  chart =
+    new Chart(
+      document.getElementById("chart"),
+      {
 
-const jodi =
-data.jodi_frequency
-.slice(0,15);
+        type:"bar",
 
+        data:{
+          labels:labels,
 
-jodiChart =
-chart(
+          datasets:[{
 
-"jodiChart",
+            label:"Historical occurrences",
 
-jodiChart,
+            data:values,
 
-jodi.map(
-x => x.value
-),
+            backgroundColor:"#00e5ff99",
 
-jodi.map(
-x => x.count
-),
+            borderColor:"#00e5ff",
 
-"Historical Jodi frequency",
+            borderWidth:1
 
-"#00ff88"
+          }]
+        },
 
-);
+        options:{
 
+          responsive:true,
 
-/* PANEL */
+          plugins:{
 
-const panel =
-data.panel_frequency
-.slice(0,15);
+            legend:{
+              labels:{
+                color:"#dffcff"
+              }
+            }
 
+          },
 
-panelChart =
-chart(
+          scales:{
 
-"panelChart",
+            x:{
+              ticks:{
+                color:"#7d91a8"
+              }
+            },
 
-panelChart,
+            y:{
+              ticks:{
+                color:"#7d91a8"
+              }
+            }
 
-panel.map(
-x => x.value
-),
+          }
 
-panel.map(
-x => x.count
-),
+        }
 
-"Historical Panel frequency",
-
-"#00e5ff"
-
-);
-
-
-/* JODI TABLE */
-
-document.getElementById(
-"jodiTable"
-).innerHTML =
-
-data.jodi_frequency
-.slice(0,20)
-.map(x =>
-
-`<tr>
-<td>${x.value}</td>
-<td>${x.count}</td>
-</tr>`
-
-)
-.join("");
-
-
-/* PANEL TABLE */
-
-document.getElementById(
-"panelTable"
-).innerHTML =
-
-data.panel_frequency
-.slice(0,20)
-.map(x =>
-
-`<tr>
-<td>${x.value}</td>
-<td>${x.count}</td>
-</tr>`
-
-)
-.join("");
-
-
-/* DIGITS */
-
-const jd =
-data.jodi_digits;
-
-const pd =
-data.panel_digits;
-
-
-document.getElementById(
-"digits"
-).innerHTML =
-
-jd.map((x,i) =>
-
-`<tr>
-
-<td>${x.digit}</td>
-
-<td>${x.count}</td>
-
-<td>${pd[i].count}</td>
-
-</tr>`
-
-).join("");
-
-
-/* GAPS */
-
-document.getElementById(
-"gaps"
-).innerHTML =
-
-data.panel_gaps
-.slice(0,20)
-.map(x =>
-
-`<tr>
-
-<td>${x.value}</td>
-
-<td>${x.gap}</td>
-
-</tr>`
-
-)
-.join("");
-
-
-/* RECENT */
-
-document.getElementById(
-"recent"
-).innerHTML =
-
-data.recent
-.map(x =>
-
-`<tr>
-
-<td>${x.index}</td>
-
-<td>${x.jodi}</td>
-
-<td>${x.panel}</td>
-
-</tr>`
-
-)
-.join("");
-
-
-log(
-"Historical tables parsed successfully."
-);
-
-log(
-"Frequency analysis complete."
-);
-
-log(
-"Panel digit distribution complete."
-);
-
-log(
-"Gap analysis complete."
-);
-
+      }
+    );
 
 }
 
-catch(error){
 
-document.getElementById(
-"status"
-).textContent =
-"● FETCH ERROR";
+// -------------------------------------
+// INITIAL STATE
+// -------------------------------------
 
-
-log(
-"ERROR: " +
-error.message
-);
-
-}
-
-}
+updateMarket();
 
 </script>
 
 </body>
-
 </html>

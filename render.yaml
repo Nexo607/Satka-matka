@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: nexo-market-analytics
+    name: nexo-analytics-v3
     env: python
+
     buildCommand: pip install -r requirements.txt
+
     startCommand: gunicorn --workers 2 --threads 4 --timeout 60 app:app
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

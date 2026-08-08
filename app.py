@@ -23,28 +23,23 @@ HEADERS = {
         "AppleWebKit/605.1.15 (KHTML, like Gecko) "
         "Version/17.0 Mobile/15E148 Safari/604.1"
     ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    "Accept": (
+        "text/html,application/xhtml+xml,"
+        "application/xml;q=0.9,*/*;q=0.8"
+    ),
+    "Accept-Language": "en-US,en;q=0.9"
 }
 
 
-def extract_panels(html):
-    """
-    Extract exact 3-digit values from the source page.
-    """
-
+def extract_three_digit_values(html):
     soup = BeautifulSoup(html, "html.parser")
 
     values = []
 
-    # First try table cells.
+    # First: table cells
     for cell in soup.find_all(["td", "th"]):
+        text = cell.get_text(" ", strip=True)
 
-        text = cell.get_text(
-            " ",
-            strip=True
-        )
-
-        # Exact 3-digit value.
         matches = re.findall(
             r"(?<!\d)\d{3}(?!\d)",
             text
@@ -52,13 +47,9 @@ def extract_panels(html):
 
         values.extend(matches)
 
-    # Fallback to complete page text.
+    # Fallback: entire document
     if not values:
-
-        text = soup.get_text(
-            " ",
-            strip=True
-        )
+        text = soup.get_text(" ", strip=True)
 
         values = re.findall(
             r"(?<!\d)\d{3}(?!\d)",
@@ -69,9 +60,7 @@ def extract_panels(html):
 
 
 def analyze(values):
-
-    counter = Counter(values)
-
+    panel_counter = Counter(values)
     digit_counter = Counter()
 
     for value in values:
@@ -83,7 +72,7 @@ def analyze(values):
             "value": value,
             "count": count
         }
-        for value, count in counter.most_common(50)
+        for value, count in panel_counter.most_common(50)
     ]
 
     digit_frequency = [
@@ -96,24 +85,31 @@ def analyze(values):
 
     return {
         "records": len(values),
-        "unique": len(counter),
+        "unique": len(panel_counter),
         "top_panels": top_panels,
         "digit_frequency": digit_frequency
     }
 
 
 @app.route("/")
-def index():
+def home():
     return render_template("index.html")
 
 
 @app.route("/health")
 def health():
-
     return jsonify({
         "ok": True,
-        "service": "NEXO",
+        "service": "NEXO Market Analytics",
         "status": "online"
+    })
+
+
+@app.route("/api/markets")
+def markets():
+    return jsonify({
+        "ok": True,
+        "markets": MARKETS
     })
 
 
@@ -123,18 +119,17 @@ def sync():
     market_key = request.args.get(
         "market",
         "kalyan"
-    )
+    ).strip().lower()
 
     selected_date = request.args.get(
         "date",
         ""
-    )
+    ).strip()
 
     if market_key not in MARKETS:
-
         return jsonify({
             "ok": False,
-            "error": "Invalid market."
+            "error": "Invalid market selected."
         }), 400
 
     market = MARKETS[market_key]
@@ -148,11 +143,28 @@ def sync():
             allow_redirects=True
         )
 
+        response.raise_for_status()
+
         html = response.text
 
-        values = extract_panels(html)
+        if not html:
+            return jsonify({
+                "ok": False,
+                "error": "Source returned empty HTML."
+            }), 502
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+        values = extract_three_digit_values(html)
 
         analysis = analyze(values)
+
+        table_rows = len(
+            soup.find_all("tr")
+        )
 
         return jsonify({
 
@@ -166,7 +178,8 @@ def sync():
 
             "source": market["url"],
 
-            "http_status": response.status_code,
+            "http_status":
+                response.status_code,
 
             "content_type":
                 response.headers.get(
@@ -174,17 +187,17 @@ def sync():
                     ""
                 ),
 
-            "html_size": len(html),
+            "html_size":
+                len(html),
+
+            "table_rows":
+                table_rows,
 
             "rows_found":
-                len(
-                    BeautifulSoup(
-                        html,
-                        "html.parser"
-                    ).find_all("tr")
-                ),
+                len(values),
 
-            "analysis": analysis
+            "analysis":
+                analysis
 
         })
 
@@ -195,11 +208,18 @@ def sync():
             "error": "Source website timed out."
         }), 504
 
+    except requests.exceptions.HTTPError as error:
+
+        return jsonify({
+            "ok": False,
+            "error": f"HTTP error: {error}"
+        }), 502
+
     except requests.exceptions.RequestException as error:
 
         return jsonify({
             "ok": False,
-            "error": f"Source request failed: {error}"
+            "error": f"Connection error: {error}"
         }), 502
 
     except Exception as error:
@@ -211,7 +231,6 @@ def sync():
 
 
 if __name__ == "__main__":
-
     app.run(
         host="0.0.0.0",
         port=10000,

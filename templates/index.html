@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -10,7 +11,9 @@ name="viewport"
 content="width=device-width,initial-scale=1"
 >
 
-<title>NEXO // Market Analytics</title>
+<title>
+NEXO // Kalyan Historical Analytics
+</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -21,9 +24,9 @@ content="width=device-width,initial-scale=1"
 --panel:#09121c;
 --cyan:#00e5ff;
 --green:#00ff88;
---red:#ff496c;
---muted:#7d91a8;
+--muted:#8295aa;
 --line:#173043;
+--danger:#ff4d6d;
 }
 
 *{
@@ -31,166 +34,245 @@ box-sizing:border-box;
 }
 
 body{
+
 margin:0;
+
 background:
 radial-gradient(
 circle at top,
-#0b1b29,
-#05080d 60%
+#0b1d2c,
+#05080d 65%
 );
+
 color:#dffcff;
+
 font-family:
 ui-monospace,
 SFMono-Regular,
 Menlo,
 monospace;
+
 }
 
 header{
-padding:20px;
-border-bottom:1px solid var(--line);
 
-display:flex;
-justify-content:space-between;
-align-items:center;
+padding:22px;
 
-gap:15px;
-flex-wrap:wrap;
+border-bottom:
+1px solid var(--line);
+
 }
 
 .brand{
-font-size:20px;
-font-weight:800;
+
+font-size:21px;
+
+font-weight:900;
+
 color:var(--cyan);
-text-shadow:0 0 15px #00e5ff55;
+
+text-shadow:
+0 0 18px #00e5ff55;
+
 }
 
-.live{
+.online{
+
+margin-top:10px;
+
 color:var(--green);
+
 }
 
 main{
+
 max-width:1200px;
+
 margin:auto;
+
 padding:18px;
+
 }
 
 .grid{
+
 display:grid;
+
 grid-template-columns:
 repeat(12,1fr);
 
-gap:14px;
+gap:15px;
+
 }
 
 .card{
-grid-column:span 4;
 
-background:#08111aee;
+grid-column:
+span 4;
 
-border:1px solid var(--line);
+background:
+#08111aee;
 
-border-radius:14px;
+border:
+1px solid var(--line);
 
-padding:16px;
+border-radius:16px;
+
+padding:18px;
 
 box-shadow:
-0 0 25px #00e5ff08;
+0 0 30px #00e5ff08;
+
 }
 
 .wide{
-grid-column:span 8;
+
+grid-column:
+span 8;
+
 }
 
 .full{
-grid-column:1/-1;
+
+grid-column:
+1/-1;
+
 }
 
 h2{
-font-size:13px;
 
 color:var(--cyan);
 
+font-size:14px;
+
 letter-spacing:.12em;
+
 }
 
 select,
 button{
+
 width:100%;
+
+padding:14px;
+
+margin-top:9px;
+
+border-radius:10px;
+
+border:
+1px solid #00e5ff66;
 
 background:#06121b;
 
 color:#dffcff;
 
-border:1px solid #00e5ff66;
-
-padding:12px;
-
-border-radius:9px;
-
 font:inherit;
 
-margin-top:8px;
 }
 
 button{
+
 color:var(--cyan);
+
 cursor:pointer;
+
 }
 
 button:hover{
+
 background:#073440;
+
 }
 
 .metric{
-font-size:30px;
+
+font-size:34px;
 
 color:var(--green);
 
-margin:8px 0;
+margin:10px 0;
+
 }
 
-.muted{
+.label{
+
 color:var(--muted);
 
 font-size:12px;
+
 }
 
 .status{
-padding:8px;
 
-border-radius:8px;
+padding:12px;
 
-background:#061a13;
+margin-top:10px;
+
+border-radius:9px;
+
+background:#031c12;
 
 color:var(--green);
 
-font-size:12px;
+}
+
+.stat-grid{
+
+display:grid;
+
+grid-template-columns:
+1fr 1fr;
+
+gap:10px;
+
+}
+
+.stat{
+
+background:#050b12;
+
+border:
+1px solid var(--line);
+
+border-radius:10px;
+
+padding:12px;
+
 }
 
 table{
+
 width:100%;
 
-border-collapse:collapse;
+border-collapse:
+collapse;
 
 font-size:12px;
+
 }
 
 th,
 td{
+
 padding:9px;
 
-border-bottom:1px solid var(--line);
+border-bottom:
+1px solid var(--line);
 
 text-align:left;
+
 }
 
 th{
+
 color:var(--cyan);
+
 }
 
 .log{
-height:180px;
+
+height:170px;
 
 overflow:auto;
 
@@ -203,31 +285,36 @@ color:#7dffb4;
 font-size:11px;
 
 white-space:pre-wrap;
-}
 
-canvas{
-max-height:320px;
 }
 
 .badge{
+
 display:inline-block;
 
-padding:5px 8px;
+padding:6px 9px;
 
-border:1px solid var(--line);
+border:
+1px solid var(--line);
 
-border-radius:6px;
+border-radius:7px;
+
+font-size:11px;
 
 color:var(--cyan);
 
-font-size:11px;
+margin-right:5px;
+
 }
 
 @media(max-width:800px){
 
 .card,
 .wide{
-grid-column:1/-1;
+
+grid-column:
+1/-1;
+
 }
 
 }
@@ -236,48 +323,69 @@ grid-column:1/-1;
 
 </head>
 
+
 <body>
+
 
 <header>
 
 <div class="brand">
+
 NEXO // MATHEMATICAL MARKET ANALYTICS
+
 </div>
 
-<div class="live">
+<div class="online">
+
 ● ANALYTICS ONLINE
+
 </div>
 
 </header>
 
+
 <main>
+
 
 <div class="grid">
 
+
 <!-- MARKET -->
 
-<section class="card">
+<section class="card wide">
 
-<h2>🎯 MARKET</h2>
+<h2>
 
-<div class="muted">
+🎯 MARKET SELECTOR
+
+</h2>
+
+<div class="label">
+
 Select historical market
+
 </div>
 
 <select id="market">
 
 <option value="kalyan-main-bazar">
+
 Kalyan Main Bazar
+
 </option>
 
 <option value="main-bazar">
+
 Main Bazar
+
 </option>
 
 </select>
 
 <button onclick="sync()">
-⚡ FETCH MARKET HISTORY
+
+⚡ FETCH HISTORICAL DATA
+
 </button>
 
 </section>
@@ -287,84 +395,119 @@ Main Bazar
 
 <section class="card">
 
-<h2>🚀 DATA SYNC</h2>
+<h2>
 
-<div id="status"
+🚀 DATA SYNC
+
+</h2>
+
+<div
+id="status"
 class="status">
 
 ● READY
 
 </div>
 
-<div class="metric"
-id="total">
+</section>
+
+
+<!-- RECORD COUNT -->
+
+<section class="card">
+
+<h2>
+
+📊 REAL RECORDS
+
+</h2>
+
+<div class="stat-grid">
+
+<div class="stat">
+
+<div
+id="jodiCount"
+class="metric">
+
 —
+
 </div>
 
-<div class="muted">
-Total extracted historical values
+<div class="label">
+
+JODI RECORDS
+
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div
+id="panelCount"
+class="metric">
+
+—
+
+</div>
+
+<div class="label">
+
+PANEL RECORDS
+
+</div>
+
+</div>
+
 </div>
 
 </section>
 
 
-<!-- SOURCES -->
-
-<section class="card">
-
-<h2>🔗 SOURCES</h2>
-
-<div
-class="badge">
-JODI CHART
-</div>
-
-<div
-class="badge">
-PANEL CHART
-</div>
-
-<p
-class="muted"
-id="sourceText">
-Waiting for synchronization...
-</p>
-
-</section>
-
-
-<!-- PANEL -->
+<!-- JODI CHART -->
 
 <section class="card wide">
 
 <h2>
-📊 PANEL / PAANA FREQUENCY
-</h2>
 
-<canvas id="panelChart"></canvas>
-
-</section>
-
-
-<!-- JODI -->
-
-<section class="card wide">
-
-<h2>
 🔢 JODI FREQUENCY
+
 </h2>
 
-<canvas id="jodiChart"></canvas>
+<canvas
+id="jodiChart">
+</canvas>
 
 </section>
 
 
-<!-- DIGITS -->
+<!-- PANEL CHART -->
+
+<section class="card wide">
+
+<h2>
+
+📊 PANEL / PAANA FREQUENCY
+
+</h2>
+
+<canvas
+id="panelChart">
+</canvas>
+
+</section>
+
+
+<!-- TOP JODI -->
 
 <section class="card">
 
 <h2>
-PANEL DIGIT DISTRIBUTION
+
+TOP JODI
+
 </h2>
 
 <table>
@@ -373,7 +516,7 @@ PANEL DIGIT DISTRIBUTION
 
 <tr>
 
-<th>Digit</th>
+<th>Jodi</th>
 
 <th>Count</th>
 
@@ -381,7 +524,7 @@ PANEL DIGIT DISTRIBUTION
 
 </thead>
 
-<tbody id="digits">
+<tbody id="jodiTable">
 
 </tbody>
 
@@ -390,12 +533,14 @@ PANEL DIGIT DISTRIBUTION
 </section>
 
 
-<!-- PANEL TABLE -->
+<!-- TOP PANEL -->
 
-<section class="card wide">
+<section class="card">
 
 <h2>
-📈 TOP HISTORICAL PANELS
+
+TOP PANEL / PAANA
+
 </h2>
 
 <table>
@@ -406,7 +551,7 @@ PANEL DIGIT DISTRIBUTION
 
 <th>Panel</th>
 
-<th>Occurrences</th>
+<th>Count</th>
 
 </tr>
 
@@ -421,12 +566,49 @@ PANEL DIGIT DISTRIBUTION
 </section>
 
 
-<!-- GAP -->
+<!-- DIGITS -->
 
 <section class="card">
 
 <h2>
-⏱ GAP ANALYSIS
+
+DIGIT DISTRIBUTION
+
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Digit</th>
+
+<th>Jodi</th>
+
+<th>Panel</th>
+
+</tr>
+
+</thead>
+
+<tbody id="digits">
+
+</tbody>
+
+</table>
+
+</section>
+
+
+<!-- GAP -->
+
+<section class="card wide">
+
+<h2>
+
+⏱ HISTORICAL GAP ANALYSIS
+
 </h2>
 
 <table>
@@ -437,7 +619,7 @@ PANEL DIGIT DISTRIBUTION
 
 <th>Value</th>
 
-<th>Gap</th>
+<th>Current gap</th>
 
 </tr>
 
@@ -452,12 +634,49 @@ PANEL DIGIT DISTRIBUTION
 </section>
 
 
+<!-- RECENT -->
+
+<section class="card full">
+
+<h2>
+
+📅 HISTORICAL RECORDS
+
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>#</th>
+
+<th>Jodi</th>
+
+<th>Panel / Paana</th>
+
+</tr>
+
+</thead>
+
+<tbody id="recent">
+
+</tbody>
+
+</table>
+
+</section>
+
+
 <!-- LOG -->
 
 <section class="card full">
 
 <h2>
+
 🧠 ANALYSIS LOG
+
 </h2>
 
 <div
@@ -466,8 +685,9 @@ class="log">
 
 SYSTEM READY
 
-Select a market and press
-FETCH MARKET HISTORY.
+Select market.
+
+Press FETCH HISTORICAL DATA.
 
 </div>
 
@@ -476,15 +696,16 @@ FETCH MARKET HISTORY.
 
 <section class="card full">
 
-<p class="muted">
+<div class="label">
 
-Statistical analysis of historical data only.
-Frequency and gap patterns do not guarantee
-a future gambling outcome.
+Historical descriptive statistics only.
+Frequency and gap analysis cannot guarantee
+a future gambling result.
 
-</p>
+</div>
 
 </section>
+
 
 </div>
 
@@ -493,18 +714,18 @@ a future gambling outcome.
 
 <script>
 
-let panelChart = null;
-
 let jodiChart = null;
 
+let panelChart = null;
 
-function log(message){
+
+function log(text){
 
 const box =
 document.getElementById("log");
 
 box.textContent +=
-"\n" + message;
+"\n" + text;
 
 box.scrollTop =
 box.scrollHeight;
@@ -512,13 +733,15 @@ box.scrollHeight;
 }
 
 
-function drawChart(
-canvas,
+function chart(
+
+id,
 oldChart,
 labels,
 values,
 label,
 color
+
 ){
 
 if(oldChart){
@@ -529,7 +752,7 @@ oldChart.destroy();
 
 return new Chart(
 
-document.getElementById(canvas),
+document.getElementById(id),
 
 {
 
@@ -578,7 +801,7 @@ scales:{
 x:{
 
 ticks:{
-color:"#7d91a8"
+color:"#8295aa"
 }
 
 },
@@ -588,7 +811,7 @@ y:{
 beginAtZero:true,
 
 ticks:{
-color:"#7d91a8"
+color:"#8295aa"
 }
 
 }
@@ -611,20 +834,18 @@ document.getElementById(
 "market"
 ).value;
 
-const status =
+
 document.getElementById(
 "status"
-);
-
-status.textContent =
+).textContent =
 "● FETCHING...";
+
 
 document.getElementById(
 "log"
 ).textContent =
 "SYSTEM STARTED";
 
-try{
 
 log(
 "MARKET: " +
@@ -632,8 +853,11 @@ market
 );
 
 log(
-"Fetching Jodi chart..."
+"Downloading Jodi chart..."
 );
+
+
+try{
 
 const response =
 await fetch(
@@ -641,8 +865,10 @@ await fetch(
 encodeURIComponent(market)
 );
 
+
 const data =
 await response.json();
+
 
 if(!data.ok){
 
@@ -651,6 +877,7 @@ data.error
 );
 
 }
+
 
 log(
 "Jodi records: " +
@@ -664,85 +891,93 @@ data.records.panel
 
 
 document.getElementById(
-"total"
+"jodiCount"
 ).textContent =
-data.records.jodi +
+data.records.jodi;
+
+
+document.getElementById(
+"panelCount"
+).textContent =
 data.records.panel;
 
 
 document.getElementById(
-"sourceText"
-).innerHTML =
-"Jodi: " +
-data.sources.jodi +
-"<br><br>" +
-"Panel: " +
-data.sources.panel;
-
-
-status.textContent =
+"status"
+).textContent =
 "● SYNC COMPLETE";
 
 
-/* PANEL CHART */
+/* JODI */
 
-const panels =
-data.panel_frequency
-.slice(0,15);
-
-panelChart =
-drawChart(
-
-"panelChart",
-
-panelChart,
-
-panels.map(x=>x.value),
-
-panels.map(x=>x.count),
-
-"Historical Panel occurrences",
-
-"#00e5ff"
-
-);
-
-
-/* JODI CHART */
-
-const jodis =
+const jodi =
 data.jodi_frequency
 .slice(0,15);
 
+
 jodiChart =
-drawChart(
+chart(
 
 "jodiChart",
 
 jodiChart,
 
-jodis.map(x=>x.value),
+jodi.map(
+x => x.value
+),
 
-jodis.map(x=>x.count),
+jodi.map(
+x => x.count
+),
 
-"Historical Jodi occurrences",
+"Historical Jodi frequency",
 
 "#00ff88"
 
 );
 
 
-/* DIGITS */
+/* PANEL */
+
+const panel =
+data.panel_frequency
+.slice(0,15);
+
+
+panelChart =
+chart(
+
+"panelChart",
+
+panelChart,
+
+panel.map(
+x => x.value
+),
+
+panel.map(
+x => x.count
+),
+
+"Historical Panel frequency",
+
+"#00e5ff"
+
+);
+
+
+/* JODI TABLE */
 
 document.getElementById(
-"digits"
+"jodiTable"
 ).innerHTML =
 
-data.panel_digit_frequency
+data.jodi_frequency
+.slice(0,20)
 .map(x =>
 
 `<tr>
-<td>${x.digit}</td>
+<td>${x.value}</td>
 <td>${x.count}</td>
 </tr>`
 
@@ -757,6 +992,7 @@ document.getElementById(
 ).innerHTML =
 
 data.panel_frequency
+.slice(0,20)
 .map(x =>
 
 `<tr>
@@ -768,18 +1004,73 @@ data.panel_frequency
 .join("");
 
 
-/* GAP */
+/* DIGITS */
+
+const jd =
+data.jodi_digits;
+
+const pd =
+data.panel_digits;
+
+
+document.getElementById(
+"digits"
+).innerHTML =
+
+jd.map((x,i) =>
+
+`<tr>
+
+<td>${x.digit}</td>
+
+<td>${x.count}</td>
+
+<td>${pd[i].count}</td>
+
+</tr>`
+
+).join("");
+
+
+/* GAPS */
 
 document.getElementById(
 "gaps"
 ).innerHTML =
 
 data.panel_gaps
+.slice(0,20)
 .map(x =>
 
 `<tr>
+
 <td>${x.value}</td>
+
 <td>${x.gap}</td>
+
+</tr>`
+
+)
+.join("");
+
+
+/* RECENT */
+
+document.getElementById(
+"recent"
+).innerHTML =
+
+data.recent
+.map(x =>
+
+`<tr>
+
+<td>${x.index}</td>
+
+<td>${x.jodi}</td>
+
+<td>${x.panel}</td>
+
 </tr>`
 
 )
@@ -787,19 +1078,31 @@ data.panel_gaps
 
 
 log(
-"STATISTICAL ANALYSIS COMPLETE"
+"Historical tables parsed successfully."
 );
 
 log(
-"Historical observations loaded."
+"Frequency analysis complete."
 );
+
+log(
+"Panel digit distribution complete."
+);
+
+log(
+"Gap analysis complete."
+);
+
 
 }
 
 catch(error){
 
-status.textContent =
+document.getElementById(
+"status"
+).textContent =
 "● FETCH ERROR";
+
 
 log(
 "ERROR: " +

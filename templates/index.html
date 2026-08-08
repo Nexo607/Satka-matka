@@ -10,18 +10,19 @@
     content="width=device-width,initial-scale=1"
 >
 
-<title>NEXO // Historical Analytics</title>
+<title>NEXO Analytics v2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 :root{
-    --bg:#05080d;
+    --bg:#03070b;
     --panel:#08111a;
     --cyan:#00e5ff;
     --green:#00ff88;
     --red:#ff5577;
+    --yellow:#ffd166;
     --muted:#7d91a8;
     --line:#173043;
 }
@@ -35,8 +36,8 @@ body{
     background:
         radial-gradient(
             circle at top,
-            #0b1b29,
-            #05080d 60%
+            #0b1d2c,
+            #03070b 65%
         );
     color:#dffcff;
     font-family:
@@ -51,31 +52,30 @@ header{
     border-bottom:1px solid var(--line);
     display:flex;
     justify-content:space-between;
-    align-items:center;
-    gap:15px;
     flex-wrap:wrap;
+    gap:12px;
 }
 
 .brand{
     color:var(--cyan);
-    font-weight:800;
-    font-size:18px;
-    text-shadow:0 0 14px #00e5ff55;
+    font-weight:900;
+    text-shadow:0 0 15px #00e5ff55;
 }
 
-.status{
+.online{
     color:var(--green);
 }
 
 main{
-    max-width:1200px;
+    max-width:1250px;
     margin:auto;
     padding:18px;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(12,1fr);
+    grid-template-columns:
+        repeat(12,1fr);
     gap:14px;
 }
 
@@ -85,6 +85,8 @@ main{
     border:1px solid var(--line);
     border-radius:14px;
     padding:16px;
+    box-shadow:
+        0 0 25px #00e5ff07;
 }
 
 .wide{
@@ -98,16 +100,16 @@ main{
 h2{
     color:var(--cyan);
     font-size:13px;
-    letter-spacing:.12em;
+    letter-spacing:.1em;
 }
 
 select,
 button{
     width:100%;
-    padding:13px;
+    padding:12px;
     margin-top:9px;
     border-radius:9px;
-    border:1px solid #00e5ff77;
+    border:1px solid #00e5ff66;
     background:#06131c;
     color:#dffcff;
     font:inherit;
@@ -124,32 +126,31 @@ button:hover{
 
 button:disabled{
     opacity:.5;
-    cursor:not-allowed;
 }
 
 .metric{
     color:var(--green);
-    font-size:30px;
-    margin:10px 0;
+    font-size:28px;
+    margin:8px 0;
 }
 
-.market-name{
+.market{
+    font-size:21px;
     color:#fff;
-    font-size:22px;
-    margin-top:15px;
+    margin-top:12px;
 }
 
 .source{
     color:var(--muted);
-    font-size:11px;
+    font-size:10px;
     word-break:break-all;
-    margin-top:6px;
+    margin-top:5px;
 }
 
 .muted{
     color:var(--muted);
-    font-size:12px;
-    line-height:1.6;
+    font-size:11px;
+    line-height:1.7;
 }
 
 .success{
@@ -160,41 +161,73 @@ button:disabled{
     color:var(--red);
 }
 
+.warning{
+    color:var(--yellow);
+}
+
 table{
     width:100%;
     border-collapse:collapse;
-    font-size:12px;
+    font-size:11px;
 }
 
 th,
 td{
-    padding:9px;
-    text-align:left;
+    padding:8px;
     border-bottom:1px solid var(--line);
+    text-align:left;
 }
 
 th{
     color:var(--cyan);
 }
 
-.log{
-    height:240px;
-    overflow:auto;
-    background:#020609;
-    border-radius:8px;
-    padding:12px;
-    color:#7dffb4;
-    font-size:11px;
-    white-space:pre-wrap;
+.rank{
+    color:var(--yellow);
+    font-weight:bold;
 }
 
-.badge{
-    display:inline-block;
-    padding:4px 8px;
-    border:1px solid var(--line);
-    border-radius:20px;
-    color:var(--cyan);
+.score{
+    color:var(--green);
+    font-weight:bold;
+}
+
+.log{
+    height:210px;
+    overflow:auto;
+    padding:12px;
+    background:#020609;
+    color:#7dffb4;
+    white-space:pre-wrap;
     font-size:10px;
+    border-radius:8px;
+}
+
+.candidate{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px;
+    margin-bottom:8px;
+    background:#050b11;
+}
+
+.candidate strong{
+    color:var(--cyan);
+    font-size:18px;
+}
+
+.bar{
+    height:5px;
+    background:#12202b;
+    margin-top:7px;
+    border-radius:5px;
+}
+
+.bar span{
+    display:block;
+    height:100%;
+    background:var(--cyan);
+    border-radius:5px;
 }
 
 @media(max-width:800px){
@@ -204,24 +237,23 @@ th{
         grid-column:1/-1;
     }
 
-    .brand{
-        font-size:14px;
-    }
 }
 
 </style>
 
 </head>
 
+
 <body>
+
 
 <header>
 
 <div class="brand">
-NEXO // HISTORICAL ANALYTICS
+NEXO // ANALYTICS v2
 </div>
 
-<div class="status">
+<div class="online">
 ● SYSTEM ONLINE
 </div>
 
@@ -239,10 +271,6 @@ NEXO // HISTORICAL ANALYTICS
 
 <h2>🎯 MARKET</h2>
 
-<div class="muted">
-Select historical market
-</div>
-
 <select id="market">
 
 <option value="kalyan">
@@ -257,7 +285,7 @@ Main Bazar
 
 <div
     id="marketName"
-    class="market-name"
+    class="market"
 >
 Kalyan
 </div>
@@ -269,8 +297,8 @@ Kalyan
 https://dpbossss.boston/panel-chart-record/kalyan.php
 </div>
 
-<button id="fetchButton">
-⚡ FETCH OLD DATA
+<button id="fetch">
+⚡ FETCH + ANALYZE
 </button>
 
 </section>
@@ -280,11 +308,7 @@ https://dpbossss.boston/panel-chart-record/kalyan.php
 
 <section class="card">
 
-<h2>🚀 DATA SYNC</h2>
-
-<div id="syncStatus" class="muted">
-Waiting...
-</div>
+<h2>📦 RECORDS</h2>
 
 <div
     id="records"
@@ -294,32 +318,7 @@ Waiting...
 </div>
 
 <div class="muted">
-Historical 3-digit values analysed
-</div>
-
-</section>
-
-
-<!-- ENGINE -->
-
-<section class="card">
-
-<h2>🧠 STATISTICAL ENGINE</h2>
-
-<div class="muted">
-
-Frequency<br>
-Digit distribution<br>
-Gap statistics<br>
-Historical ranking
-
-</div>
-
-<div
-    id="engineStatus"
-    class="metric"
->
-READY
+Historical records analysed
 </div>
 
 </section>
@@ -329,17 +328,62 @@ READY
 
 <section class="card">
 
-<h2>🔢 UNIQUE VALUES</h2>
+<h2>🔢 UNIQUE</h2>
 
 <div
-    id="uniqueValues"
+    id="unique"
     class="metric"
 >
 —
 </div>
 
 <div class="muted">
-Unique historical values
+Unique 3-digit values
+</div>
+
+</section>
+
+
+<!-- ENGINE -->
+
+<section class="card">
+
+<h2>🧠 ENGINE</h2>
+
+<div
+    id="engine"
+    class="metric"
+>
+READY
+</div>
+
+<div class="muted">
+Frequency + recency + gap +
+position statistics
+</div>
+
+</section>
+
+
+<!-- NEXT ANALYSIS -->
+
+<section class="card full">
+
+<h2>
+⚡ NEXO STATISTICAL CANDIDATE RANKING
+</h2>
+
+<div class="muted">
+Candidates are ranked from historical
+features. This is not a guaranteed
+prediction of a future gambling result.
+</div>
+
+<div
+    id="candidates"
+    style="margin-top:12px"
+>
+No analysis yet.
 </div>
 
 </section>
@@ -349,14 +393,14 @@ Unique historical values
 
 <section class="card wide">
 
-<h2>📈 HISTORICAL FREQUENCY</h2>
+<h2>📈 TOP HISTORICAL FREQUENCY</h2>
 
 <canvas id="chart"></canvas>
 
 </section>
 
 
-<!-- DIGIT DISTRIBUTION -->
+<!-- DIGITS -->
 
 <section class="card">
 
@@ -365,12 +409,10 @@ Unique historical values
 <table>
 
 <thead>
-
 <tr>
 <th>Digit</th>
 <th>Count</th>
 </tr>
-
 </thead>
 
 <tbody id="digits"></tbody>
@@ -384,43 +426,42 @@ Unique historical values
 
 <section class="card wide">
 
-<h2>📊 HISTORICAL PANEL RANKING</h2>
+<h2>📊 HISTORICAL PANELS</h2>
 
 <table>
 
 <thead>
-
 <tr>
-<th>Panel / Paana</th>
+<th>Rank</th>
+<th>Panel</th>
 <th>Occurrences</th>
 </tr>
-
 </thead>
 
-<tbody id="top"></tbody>
+<tbody id="panels"></tbody>
 
 </table>
 
 </section>
 
 
-<!-- GAP ANALYSIS -->
+<!-- GAP -->
 
 <section class="card full">
 
-<h2>⏱ HISTORICAL GAP ANALYSIS</h2>
+<h2>⏱ GAP ANALYSIS</h2>
 
 <table>
 
 <thead>
-
 <tr>
-<th>Value</th>
+<th>Panel</th>
 <th>Occurrences</th>
 <th>Last Seen</th>
 <th>Average Gap</th>
+<th>Min</th>
+<th>Max</th>
 </tr>
-
 </thead>
 
 <tbody id="gaps"></tbody>
@@ -430,11 +471,58 @@ Unique historical values
 </section>
 
 
+<!-- RECENT TREND -->
+
+<section class="card wide">
+
+<h2>📊 RECENT VS HISTORICAL</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Panel</th>
+<th>Total</th>
+<th>Recent</th>
+<th>Change</th>
+</tr>
+</thead>
+
+<tbody id="recent"></tbody>
+
+</table>
+
+</section>
+
+
+<!-- BACKTEST -->
+
+<section class="card">
+
+<h2>🧪 BACKTEST</h2>
+
+<div
+    id="backtest"
+    class="metric"
+>
+—
+</div>
+
+<div
+    id="backtestInfo"
+    class="muted"
+>
+Waiting for data
+</div>
+
+</section>
+
+
 <!-- LOG -->
 
 <section class="card full">
 
-<h2>🧠 SYSTEM LOG</h2>
+<h2>🖥 ANALYSIS LOG</h2>
 
 <div
     id="log"
@@ -442,7 +530,8 @@ Unique historical values
 >
 SYSTEM READY
 
-Select a market and press FETCH OLD DATA.
+Choose a market and press
+FETCH + ANALYZE.
 </div>
 
 </section>
@@ -452,9 +541,11 @@ Select a market and press FETCH OLD DATA.
 
 <div class="muted">
 
-This dashboard performs descriptive historical
-analysis only. Frequency, gaps and trends are
-not reliable guarantees of future gambling outcomes.
+NEXO performs historical descriptive
+statistics and model evaluation.
+Scores do not establish that a particular
+panel, paana, jodi or other gambling
+outcome will occur next.
 
 </div>
 
@@ -468,7 +559,10 @@ not reliable guarantees of future gambling outcomes.
 
 <script>
 
-const MARKETS = {
+let chart = null;
+
+
+const markets = {
 
     kalyan:{
         name:"Kalyan",
@@ -485,117 +579,84 @@ const MARKETS = {
 };
 
 
-let chart = null;
-
-
-const market =
-document.getElementById("market");
-
-const marketName =
-document.getElementById("marketName");
-
-const sourceUrl =
-document.getElementById("sourceUrl");
-
-const fetchButton =
-document.getElementById("fetchButton");
-
-const syncStatus =
-document.getElementById("syncStatus");
-
-const records =
-document.getElementById("records");
-
-const uniqueValues =
-document.getElementById("uniqueValues");
-
-const engineStatus =
-document.getElementById("engineStatus");
-
-const digits =
-document.getElementById("digits");
-
-const top =
-document.getElementById("top");
-
-const gaps =
-document.getElementById("gaps");
-
-const logBox =
-document.getElementById("log");
+const $ = id =>
+    document.getElementById(id);
 
 
 function log(message){
 
     const time =
-        new Date().toLocaleTimeString();
+        new Date()
+        .toLocaleTimeString();
 
-    logBox.textContent +=
+    $("log").textContent +=
         "\n[" +
         time +
         "] " +
         message;
 
-    logBox.scrollTop =
-        logBox.scrollHeight;
+    $("log").scrollTop =
+        $("log").scrollHeight;
 }
 
 
 function updateMarket(){
 
-    const selected =
-        MARKETS[market.value];
+    const item =
+        markets[$("market").value];
 
-    marketName.textContent =
-        selected.name;
+    $("marketName")
+        .textContent =
+        item.name;
 
-    sourceUrl.textContent =
-        selected.url;
+    $("sourceUrl")
+        .textContent =
+        item.url;
 
-    records.textContent =
-        "—";
-
-    uniqueValues.textContent =
-        "—";
-
-    engineStatus.textContent =
-        "READY";
-
-    syncStatus.textContent =
-        "Waiting...";
-
-    log(
-        "MARKET SELECTED: " +
-        selected.name
-    );
 }
 
 
-async function fetchMarket(){
+$("market")
+.addEventListener(
+    "change",
+    updateMarket
+);
+
+
+$("fetch")
+.addEventListener(
+    "click",
+    fetchData
+);
+
+
+async function fetchData(){
 
     const key =
-        market.value;
+        $("market").value;
 
-    const selected =
-        MARKETS[key];
+    const item =
+        markets[key];
 
-    fetchButton.disabled =
+    $("fetch").disabled =
         true;
 
-    fetchButton.textContent =
-        "⏳ FETCHING...";
+    $("fetch").textContent =
+        "⏳ ANALYSING...";
 
-    syncStatus.innerHTML =
-        '<span class="success">● CONNECTING</span>';
-
-    engineStatus.textContent =
+    $("engine")
+        .textContent =
         "RUNNING";
+
+    $("candidates")
+        .innerHTML =
+        "Fetching historical data...";
+
 
     log("");
     log("==============================");
-    log("STARTING HISTORICAL SYNC");
-    log("MARKET: " + selected.name);
-    log("SOURCE: " + selected.url);
+    log("MARKET: " + item.name);
+    log("FETCH: " + item.url);
 
 
     try{
@@ -605,12 +666,7 @@ async function fetchMarket(){
                 "/api/sync?market=" +
                 encodeURIComponent(key),
                 {
-                    method:"GET",
-                    cache:"no-store",
-                    headers:{
-                        "Accept":
-                        "application/json"
-                    }
+                    cache:"no-store"
                 }
             );
 
@@ -619,85 +675,103 @@ async function fetchMarket(){
             await response.json();
 
 
-        if(!response.ok || !data.ok){
+        if(!response.ok ||
+           !data.ok){
 
             throw new Error(
                 data.error ||
-                "Server request failed"
+                "Analysis failed"
             );
 
         }
 
 
-        syncStatus.innerHTML =
-            '<span class="success">● SYNC COMPLETE</span>';
+        const analysis =
+            data.analysis;
 
-        engineStatus.textContent =
+
+        $("records")
+            .textContent =
+            analysis.records;
+
+
+        $("unique")
+            .textContent =
+            analysis.unique_values;
+
+
+        $("engine")
+            .textContent =
             "LIVE";
 
 
-        records.textContent =
-            data.analysis.records;
-
-
-        uniqueValues.textContent =
-            data.analysis.unique_values;
-
-
         log(
-            "HTTP STATUS: " +
+            "HTTP: " +
             data.source.http_status
         );
 
         log(
-            "HTML SIZE: " +
-            data.source.html_size +
-            " bytes"
-        );
-
-        log(
-            "TABLE ROWS: " +
-            data.source.table_rows
-        );
-
-        log(
             "RECORDS: " +
-            data.analysis.records
+            analysis.records
         );
 
         log(
             "UNIQUE: " +
-            data.analysis.unique_values
+            analysis.unique_values
+        );
+
+
+        renderCandidates(
+            analysis.candidate_ranking
         );
 
 
         renderDigits(
-            data.analysis.digit_frequency
+            analysis.digit_frequency
         );
 
 
         renderPanels(
-            data.analysis.top_panels
+            analysis.top_panels
         );
 
 
         renderGaps(
-            data.analysis.gap_statistics
+            analysis.gap_statistics
+        );
+
+
+        renderRecent(
+            analysis.recent_analysis
+        );
+
+
+        renderBacktest(
+            analysis.backtest
         );
 
 
         renderChart(
-            data.analysis.top_panels
+            analysis.top_panels
+        );
+
+
+        log(
+            "ANALYSIS COMPLETE"
         );
 
 
     }catch(error){
 
-        syncStatus.innerHTML =
-            '<span class="error">● SYNC FAILED</span>';
-
-        engineStatus.textContent =
+        $("engine")
+            .textContent =
             "ERROR";
+
+        $("candidates")
+            .innerHTML =
+            `<span class="error">
+                ${escapeHtml(error.message)}
+             </span>`;
 
         log(
             "ERROR: " +
@@ -706,74 +780,228 @@ async function fetchMarket(){
 
     }finally{
 
-        fetchButton.disabled =
+        $("fetch").disabled =
             false;
 
-        fetchButton.textContent =
-            "⚡ FETCH OLD DATA";
+        $("fetch").textContent =
+            "⚡ FETCH + ANALYZE";
 
     }
+
+}
+
+
+function renderCandidates(items){
+
+    if(!items.length){
+
+        $("candidates")
+            .textContent =
+            "Insufficient historical data.";
+
+        return;
+    }
+
+
+    $("candidates").innerHTML =
+        items
+        .slice(0,10)
+        .map(
+            (item,index) => {
+
+                const score =
+                    Number(item.score);
+
+                return `
+
+                <div class="candidate">
+
+                    <div>
+
+                        <span class="rank">
+                        #${index + 1}
+                        </span>
+
+                        &nbsp;
+
+                        <strong>
+                        ${item.value}
+                        </strong>
+
+                        &nbsp;
+
+                        <span class="score">
+                        ${score}/100
+                        </span>
+
+                    </div>
+
+                    <div class="muted">
+
+                        Frequency:
+                        ${item.frequency}
+
+                        &nbsp; | &nbsp;
+
+                        Recent:
+                        ${item.recent_frequency}
+
+                        &nbsp; | &nbsp;
+
+                        Last seen:
+                        ${item.last_seen ?? "—"}
+
+                    </div>
+
+                    <div class="bar">
+
+                        <span
+                            style="width:${score}%"
+                        ></span>
+
+                    </div>
+
+                </div>
+                `;
+            }
+        )
+        .join("");
+
 }
 
 
 function renderDigits(items){
 
-    digits.innerHTML = "";
+    $("digits").innerHTML =
+        items
+        .map(
+            item => `
+            <tr>
+                <td>${item.digit}</td>
+                <td>${item.count}</td>
+            </tr>
+            `
+        )
+        .join("");
 
-    for(const item of items){
-
-        const row =
-            document.createElement("tr");
-
-        row.innerHTML =
-            `<td>${item.digit}</td>
-             <td>${item.count}</td>`;
-
-        digits.appendChild(row);
-    }
 }
 
 
 function renderPanels(items){
 
-    top.innerHTML = "";
+    $("panels").innerHTML =
+        items
+        .map(
+            (item,index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${item.value}</td>
+                <td>${item.count}</td>
+            </tr>
+            `
+        )
+        .join("");
 
-    for(const item of items){
-
-        const row =
-            document.createElement("tr");
-
-        row.innerHTML =
-            `<td>${item.value}</td>
-             <td>${item.count}</td>`;
-
-        top.appendChild(row);
-    }
 }
 
 
 function renderGaps(items){
 
-    gaps.innerHTML = "";
+    $("gaps").innerHTML =
+        items
+        .slice(0,30)
+        .map(
+            item => `
 
-    for(const item of items){
+            <tr>
 
-        const average =
-            item.average_gap === null
-            ? "—"
-            : item.average_gap;
+                <td>${item.value}</td>
 
-        const row =
-            document.createElement("tr");
+                <td>
+                ${item.occurrences}
+                </td>
 
-        row.innerHTML =
-            `<td>${item.value}</td>
-             <td>${item.occurrences}</td>
-             <td>${item.last_seen_records_ago}</td>
-             <td>${average}</td>`;
+                <td>
+                ${item.last_seen}
+                </td>
 
-        gaps.appendChild(row);
+                <td>
+                ${item.average_gap ?? "—"}
+                </td>
+
+                <td>
+                ${item.min_gap ?? "—"}
+                </td>
+
+                <td>
+                ${item.max_gap ?? "—"}
+                </td>
+
+            </tr>
+
+            `
+        )
+        .join("");
+
+}
+
+
+function renderRecent(items){
+
+    $("recent").innerHTML =
+        items
+        .slice(0,25)
+        .map(
+            item => `
+
+            <tr>
+
+                <td>${item.value}</td>
+
+                <td>${item.total}</td>
+
+                <td>${item.recent}</td>
+
+                <td>
+                    ${Number(item.change).toFixed(4)}
+                </td>
+
+            </tr>
+
+            `
+        )
+        .join("");
+
+}
+
+
+function renderBacktest(result){
+
+    if(!result.available){
+
+        $("backtest")
+            .textContent =
+            "N/A";
+
+        $("backtestInfo")
+            .textContent =
+            result.reason;
+
+        return;
     }
+
+
+    $("backtest")
+        .textContent =
+        result.hit_rate +
+        "%";
+
+
+    $("backtestInfo")
+        .textContent =
+        `${result.hits} matches /
+         ${result.tests} chronological tests`;
+
 }
 
 
@@ -781,16 +1009,6 @@ function renderChart(items){
 
     const selected =
         items.slice(0,12);
-
-    const labels =
-        selected.map(
-            item => item.value
-        );
-
-    const values =
-        selected.map(
-            item => item.count
-        );
 
 
     if(chart){
@@ -800,32 +1018,42 @@ function renderChart(items){
 
     chart =
         new Chart(
-            document.getElementById("chart"),
+            $("chart"),
             {
+
                 type:"bar",
 
                 data:{
-                    labels:labels,
+
+                    labels:
+                        selected.map(
+                            x => x.value
+                        ),
 
                     datasets:[{
 
                         label:
-                        "Historical occurrences",
+                            "Historical occurrences",
 
-                        data:values,
+                        data:
+                            selected.map(
+                                x => x.count
+                            ),
 
                         backgroundColor:
-                        "#00e5ff99",
+                            "#00e5ff99",
 
                         borderColor:
-                        "#00e5ff",
+                            "#00e5ff",
 
                         borderWidth:1
 
                     }]
+
                 },
 
                 options:{
+
                     responsive:true,
 
                     plugins:{
@@ -837,6 +1065,7 @@ function renderChart(items){
                     },
 
                     scales:{
+
                         x:{
                             ticks:{
                                 color:"#7d91a8"
@@ -850,23 +1079,27 @@ function renderChart(items){
                                 color:"#7d91a8"
                             }
                         }
+
                     }
+
                 }
+
             }
         );
+
 }
 
 
-market.addEventListener(
-    "change",
-    updateMarket
-);
+function escapeHtml(value){
 
+    return String(value)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
 
-fetchButton.addEventListener(
-    "click",
-    fetchMarket
-);
+}
 
 
 updateMarket();

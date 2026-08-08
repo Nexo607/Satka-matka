@@ -1,82 +1,817 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NEXO // Historical Analytics</title>
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1"
+>
+
+<title>NEXO // Market Analytics</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-:root{--bg:#05080d;--panel:#0b111a;--cyan:#00e5ff;--green:#00ff88;--muted:#7d91a8;--line:#173043}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#0b1b29,#05080d 55%);color:#dffcff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-header{padding:22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
-.brand{font-size:20px;font-weight:800;color:var(--cyan);text-shadow:0 0 14px #00e5ff55}.status{color:var(--green)}
-main{max-width:1200px;margin:auto;padding:18px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{grid-column:span 4;background:#08111aee;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 0 25px #00e5ff08}.wide{grid-column:span 8}.full{grid-column:1/-1}
-h2{font-size:13px;color:var(--cyan);letter-spacing:.12em}button{background:#06212a;color:var(--cyan);border:1px solid #00e5ff77;padding:11px 15px;border-radius:9px;font:inherit;cursor:pointer}button:hover{background:#073440}
-input{width:100%;background:#050b12;color:#dffcff;border:1px solid var(--line);padding:11px;border-radius:8px;margin:7px 0 10px}.metric{font-size:28px;color:var(--green);margin:8px 0}.muted{color:var(--muted);font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:9px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--cyan)}
-.log{height:180px;overflow:auto;background:#03070b;padding:12px;color:#7dffb4;font-size:11px}
-@media(max-width:800px){.card,.wide{grid-column:1/-1}}
-</style>
-</head>
-<body>
-<header><div class="brand">NEXO // PAANA HISTORICAL ANALYTICS</div><div class="status">● ANALYTICS ONLINE</div></header>
-<main>
-<div class="grid">
-<section class="card wide">
-<h2>🚀 INSTANT DATA SYNC</h2>
-<div class="muted">Historical source</div>
-<input id="url" value="https://dpbossss.boston/">
-<button onclick="sync()">⚡ FETCH OLD DATA</button>
-<button onclick="sync()">🔄 REFRESH</button>
-</section>
-<section class="card">
-<h2>DATASET</h2><div id="records" class="metric">—</div><div class="muted">3-digit historical tokens detected</div>
-</section>
-<section class="card">
-<h2>🔐 FORMULA ENGINE</h2>
-<div class="muted">Frequency • gaps • digit distribution • descriptive statistics</div>
-<div class="metric">LIVE</div>
-</section>
-<section class="card wide">
-<h2>📊 PAANA / PANEL FREQUENCY</h2>
-<canvas id="chart"></canvas>
-</section>
-<section class="card">
-<h2>DIGIT DISTRIBUTION</h2>
-<table><thead><tr><th>Digit</th><th>Count</th></tr></thead><tbody id="digits"></tbody></table>
-</section>
-<section class="card wide">
-<h2>🧠 ANALYSIS LOG</h2>
-<div id="log" class="log">SYSTEM READY — click FETCH OLD DATA</div>
-</section>
-<section class="card full">
-<h2>HISTORICAL OBSERVATIONS</h2>
-<table><thead><tr><th>Panel/Paana</th><th>Occurrences</th></tr></thead><tbody id="top"></tbody></table>
-<p class="muted">Historical descriptive analysis only. The dashboard does not claim or guarantee the next gambling result.</p>
-</section>
-</div>
-</main>
-<script>
-let chart;
-function log(x){document.getElementById('log').innerHTML += "\\n"+x; document.getElementById('log').scrollTop=99999}
-async function sync(){
- const url=document.getElementById('url').value.trim();
- document.getElementById('log').innerHTML="FETCHING SOURCE…";
- try{
-  const r=await fetch('/api/sync?url='+encodeURIComponent(url));
-  const d=await r.json();
-  if(!d.ok) throw new Error(d.error);
-  document.getElementById('records').textContent=d.analysis.records;
-  log("SOURCE OK: "+d.source);
-  log("ROWS FOUND: "+d.rows_found);
-  log("3-DIGIT TOKENS: "+d.analysis.records);
-  document.getElementById('digits').innerHTML=d.analysis.digit_frequency.map(x=>`<tr><td>${x.digit}</td><td>${x.count}</td></tr>`).join('');
-  document.getElementById('top').innerHTML=d.analysis.top_panels.map(x=>`<tr><td>${x.value}</td><td>${x.count}</td></tr>`).join('');
-  const labels=d.analysis.top_panels.slice(0,12).map(x=>x.value), vals=d.analysis.top_panels.slice(0,12).map(x=>x.count);
-  if(chart) chart.destroy();
-  chart=new Chart(document.getElementById('chart'),{type:'bar',data:{labels,datasets:[{label:'Historical occurrences',data:vals,backgroundColor:'#00e5ff99',borderColor:'#00e5ff',borderWidth:1}]},options:{plugins:{legend:{labels:{color:'#dffcff'}}},scales:{x:{ticks:{color:'#7d91a8'}},y:{ticks:{color:'#7d91a8'}}}}});
- }catch(e){log("FETCH ERROR: "+e.message)}
+
+:root{
+--bg:#05080d;
+--panel:#09121c;
+--cyan:#00e5ff;
+--green:#00ff88;
+--red:#ff496c;
+--muted:#7d91a8;
+--line:#173043;
 }
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+background:
+radial-gradient(
+circle at top,
+#0b1b29,
+#05080d 60%
+);
+color:#dffcff;
+font-family:
+ui-monospace,
+SFMono-Regular,
+Menlo,
+monospace;
+}
+
+header{
+padding:20px;
+border-bottom:1px solid var(--line);
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+gap:15px;
+flex-wrap:wrap;
+}
+
+.brand{
+font-size:20px;
+font-weight:800;
+color:var(--cyan);
+text-shadow:0 0 15px #00e5ff55;
+}
+
+.live{
+color:var(--green);
+}
+
+main{
+max-width:1200px;
+margin:auto;
+padding:18px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:
+repeat(12,1fr);
+
+gap:14px;
+}
+
+.card{
+grid-column:span 4;
+
+background:#08111aee;
+
+border:1px solid var(--line);
+
+border-radius:14px;
+
+padding:16px;
+
+box-shadow:
+0 0 25px #00e5ff08;
+}
+
+.wide{
+grid-column:span 8;
+}
+
+.full{
+grid-column:1/-1;
+}
+
+h2{
+font-size:13px;
+
+color:var(--cyan);
+
+letter-spacing:.12em;
+}
+
+select,
+button{
+width:100%;
+
+background:#06121b;
+
+color:#dffcff;
+
+border:1px solid #00e5ff66;
+
+padding:12px;
+
+border-radius:9px;
+
+font:inherit;
+
+margin-top:8px;
+}
+
+button{
+color:var(--cyan);
+cursor:pointer;
+}
+
+button:hover{
+background:#073440;
+}
+
+.metric{
+font-size:30px;
+
+color:var(--green);
+
+margin:8px 0;
+}
+
+.muted{
+color:var(--muted);
+
+font-size:12px;
+}
+
+.status{
+padding:8px;
+
+border-radius:8px;
+
+background:#061a13;
+
+color:var(--green);
+
+font-size:12px;
+}
+
+table{
+width:100%;
+
+border-collapse:collapse;
+
+font-size:12px;
+}
+
+th,
+td{
+padding:9px;
+
+border-bottom:1px solid var(--line);
+
+text-align:left;
+}
+
+th{
+color:var(--cyan);
+}
+
+.log{
+height:180px;
+
+overflow:auto;
+
+background:#03070b;
+
+padding:12px;
+
+color:#7dffb4;
+
+font-size:11px;
+
+white-space:pre-wrap;
+}
+
+canvas{
+max-height:320px;
+}
+
+.badge{
+display:inline-block;
+
+padding:5px 8px;
+
+border:1px solid var(--line);
+
+border-radius:6px;
+
+color:var(--cyan);
+
+font-size:11px;
+}
+
+@media(max-width:800px){
+
+.card,
+.wide{
+grid-column:1/-1;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="brand">
+NEXO // MATHEMATICAL MARKET ANALYTICS
+</div>
+
+<div class="live">
+● ANALYTICS ONLINE
+</div>
+
+</header>
+
+<main>
+
+<div class="grid">
+
+<!-- MARKET -->
+
+<section class="card">
+
+<h2>🎯 MARKET</h2>
+
+<div class="muted">
+Select historical market
+</div>
+
+<select id="market">
+
+<option value="kalyan-main-bazar">
+Kalyan Main Bazar
+</option>
+
+<option value="main-bazar">
+Main Bazar
+</option>
+
+</select>
+
+<button onclick="sync()">
+⚡ FETCH MARKET HISTORY
+</button>
+
+</section>
+
+
+<!-- STATUS -->
+
+<section class="card">
+
+<h2>🚀 DATA SYNC</h2>
+
+<div id="status"
+class="status">
+
+● READY
+
+</div>
+
+<div class="metric"
+id="total">
+—
+</div>
+
+<div class="muted">
+Total extracted historical values
+</div>
+
+</section>
+
+
+<!-- SOURCES -->
+
+<section class="card">
+
+<h2>🔗 SOURCES</h2>
+
+<div
+class="badge">
+JODI CHART
+</div>
+
+<div
+class="badge">
+PANEL CHART
+</div>
+
+<p
+class="muted"
+id="sourceText">
+Waiting for synchronization...
+</p>
+
+</section>
+
+
+<!-- PANEL -->
+
+<section class="card wide">
+
+<h2>
+📊 PANEL / PAANA FREQUENCY
+</h2>
+
+<canvas id="panelChart"></canvas>
+
+</section>
+
+
+<!-- JODI -->
+
+<section class="card wide">
+
+<h2>
+🔢 JODI FREQUENCY
+</h2>
+
+<canvas id="jodiChart"></canvas>
+
+</section>
+
+
+<!-- DIGITS -->
+
+<section class="card">
+
+<h2>
+PANEL DIGIT DISTRIBUTION
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Digit</th>
+
+<th>Count</th>
+
+</tr>
+
+</thead>
+
+<tbody id="digits">
+
+</tbody>
+
+</table>
+
+</section>
+
+
+<!-- PANEL TABLE -->
+
+<section class="card wide">
+
+<h2>
+📈 TOP HISTORICAL PANELS
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Panel</th>
+
+<th>Occurrences</th>
+
+</tr>
+
+</thead>
+
+<tbody id="panelTable">
+
+</tbody>
+
+</table>
+
+</section>
+
+
+<!-- GAP -->
+
+<section class="card">
+
+<h2>
+⏱ GAP ANALYSIS
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Value</th>
+
+<th>Gap</th>
+
+</tr>
+
+</thead>
+
+<tbody id="gaps">
+
+</tbody>
+
+</table>
+
+</section>
+
+
+<!-- LOG -->
+
+<section class="card full">
+
+<h2>
+🧠 ANALYSIS LOG
+</h2>
+
+<div
+id="log"
+class="log">
+
+SYSTEM READY
+
+Select a market and press
+FETCH MARKET HISTORY.
+
+</div>
+
+</section>
+
+
+<section class="card full">
+
+<p class="muted">
+
+Statistical analysis of historical data only.
+Frequency and gap patterns do not guarantee
+a future gambling outcome.
+
+</p>
+
+</section>
+
+</div>
+
+</main>
+
+
+<script>
+
+let panelChart = null;
+
+let jodiChart = null;
+
+
+function log(message){
+
+const box =
+document.getElementById("log");
+
+box.textContent +=
+"\n" + message;
+
+box.scrollTop =
+box.scrollHeight;
+
+}
+
+
+function drawChart(
+canvas,
+oldChart,
+labels,
+values,
+label,
+color
+){
+
+if(oldChart){
+
+oldChart.destroy();
+
+}
+
+return new Chart(
+
+document.getElementById(canvas),
+
+{
+
+type:"bar",
+
+data:{
+
+labels:labels,
+
+datasets:[{
+
+label:label,
+
+data:values,
+
+backgroundColor:
+color + "99",
+
+borderColor:
+color,
+
+borderWidth:1
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+
+labels:{
+color:"#dffcff"
+}
+
+}
+
+},
+
+scales:{
+
+x:{
+
+ticks:{
+color:"#7d91a8"
+}
+
+},
+
+y:{
+
+beginAtZero:true,
+
+ticks:{
+color:"#7d91a8"
+}
+
+}
+
+}
+
+}
+
+}
+
+);
+
+}
+
+
+async function sync(){
+
+const market =
+document.getElementById(
+"market"
+).value;
+
+const status =
+document.getElementById(
+"status"
+);
+
+status.textContent =
+"● FETCHING...";
+
+document.getElementById(
+"log"
+).textContent =
+"SYSTEM STARTED";
+
+try{
+
+log(
+"MARKET: " +
+market
+);
+
+log(
+"Fetching Jodi chart..."
+);
+
+const response =
+await fetch(
+"/api/sync?market=" +
+encodeURIComponent(market)
+);
+
+const data =
+await response.json();
+
+if(!data.ok){
+
+throw new Error(
+data.error
+);
+
+}
+
+log(
+"Jodi records: " +
+data.records.jodi
+);
+
+log(
+"Panel records: " +
+data.records.panel
+);
+
+
+document.getElementById(
+"total"
+).textContent =
+data.records.jodi +
+data.records.panel;
+
+
+document.getElementById(
+"sourceText"
+).innerHTML =
+"Jodi: " +
+data.sources.jodi +
+"<br><br>" +
+"Panel: " +
+data.sources.panel;
+
+
+status.textContent =
+"● SYNC COMPLETE";
+
+
+/* PANEL CHART */
+
+const panels =
+data.panel_frequency
+.slice(0,15);
+
+panelChart =
+drawChart(
+
+"panelChart",
+
+panelChart,
+
+panels.map(x=>x.value),
+
+panels.map(x=>x.count),
+
+"Historical Panel occurrences",
+
+"#00e5ff"
+
+);
+
+
+/* JODI CHART */
+
+const jodis =
+data.jodi_frequency
+.slice(0,15);
+
+jodiChart =
+drawChart(
+
+"jodiChart",
+
+jodiChart,
+
+jodis.map(x=>x.value),
+
+jodis.map(x=>x.count),
+
+"Historical Jodi occurrences",
+
+"#00ff88"
+
+);
+
+
+/* DIGITS */
+
+document.getElementById(
+"digits"
+).innerHTML =
+
+data.panel_digit_frequency
+.map(x =>
+
+`<tr>
+<td>${x.digit}</td>
+<td>${x.count}</td>
+</tr>`
+
+)
+.join("");
+
+
+/* PANEL TABLE */
+
+document.getElementById(
+"panelTable"
+).innerHTML =
+
+data.panel_frequency
+.map(x =>
+
+`<tr>
+<td>${x.value}</td>
+<td>${x.count}</td>
+</tr>`
+
+)
+.join("");
+
+
+/* GAP */
+
+document.getElementById(
+"gaps"
+).innerHTML =
+
+data.panel_gaps
+.map(x =>
+
+`<tr>
+<td>${x.value}</td>
+<td>${x.gap}</td>
+</tr>`
+
+)
+.join("");
+
+
+log(
+"STATISTICAL ANALYSIS COMPLETE"
+);
+
+log(
+"Historical observations loaded."
+);
+
+}
+
+catch(error){
+
+status.textContent =
+"● FETCH ERROR";
+
+log(
+"ERROR: " +
+error.message
+);
+
+}
+
+}
+
 </script>
+
 </body>
+
 </html>

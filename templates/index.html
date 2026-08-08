@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -10,7 +11,7 @@
     content="width=device-width,initial-scale=1"
 >
 
-<title>NEXO Analytics v2</title>
+<title>NEXO Analytics v3</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -21,8 +22,8 @@
     --panel:#08111a;
     --cyan:#00e5ff;
     --green:#00ff88;
-    --red:#ff5577;
     --yellow:#ffd166;
+    --red:#ff5577;
     --muted:#7d91a8;
     --line:#173043;
 }
@@ -34,32 +35,31 @@
 body{
     margin:0;
     background:
-        radial-gradient(
-            circle at top,
-            #0b1d2c,
-            #03070b 65%
-        );
+    radial-gradient(
+        circle at top,
+        #0b1d2c,
+        #03070b 65%
+    );
     color:#dffcff;
     font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        monospace;
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 
 header{
-    padding:20px;
+    padding:18px;
     border-bottom:1px solid var(--line);
     display:flex;
     justify-content:space-between;
     flex-wrap:wrap;
-    gap:12px;
+    gap:10px;
 }
 
 .brand{
     color:var(--cyan);
     font-weight:900;
-    text-shadow:0 0 15px #00e5ff55;
 }
 
 .online{
@@ -69,13 +69,12 @@ header{
 main{
     max-width:1250px;
     margin:auto;
-    padding:18px;
+    padding:16px;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:
-        repeat(12,1fr);
+    grid-template-columns:repeat(12,1fr);
     gap:14px;
 }
 
@@ -84,9 +83,7 @@ main{
     background:#08111aee;
     border:1px solid var(--line);
     border-radius:14px;
-    padding:16px;
-    box-shadow:
-        0 0 25px #00e5ff07;
+    padding:15px;
 }
 
 .wide{
@@ -99,7 +96,7 @@ main{
 
 h2{
     color:var(--cyan);
-    font-size:13px;
+    font-size:12px;
     letter-spacing:.1em;
 }
 
@@ -107,8 +104,8 @@ select,
 button{
     width:100%;
     padding:12px;
-    margin-top:9px;
-    border-radius:9px;
+    margin-top:8px;
+    border-radius:8px;
     border:1px solid #00e5ff66;
     background:#06131c;
     color:#dffcff;
@@ -117,11 +114,6 @@ button{
 
 button{
     color:var(--cyan);
-    cursor:pointer;
-}
-
-button:hover{
-    background:#073440;
 }
 
 button:disabled{
@@ -134,23 +126,23 @@ button:disabled{
     margin:8px 0;
 }
 
+.muted{
+    color:var(--muted);
+    font-size:11px;
+    line-height:1.6;
+}
+
 .market{
-    font-size:21px;
-    color:#fff;
+    color:white;
+    font-size:20px;
     margin-top:12px;
 }
 
 .source{
     color:var(--muted);
-    font-size:10px;
+    font-size:9px;
     word-break:break-all;
     margin-top:5px;
-}
-
-.muted{
-    color:var(--muted);
-    font-size:11px;
-    line-height:1.7;
 }
 
 .success{
@@ -168,7 +160,7 @@ button:disabled{
 table{
     width:100%;
     border-collapse:collapse;
-    font-size:11px;
+    font-size:10px;
 }
 
 th,
@@ -182,52 +174,51 @@ th{
     color:var(--cyan);
 }
 
-.rank{
-    color:var(--yellow);
+.candidate{
+    border:1px solid var(--line);
+    padding:10px;
+    margin-bottom:7px;
+    border-radius:9px;
+}
+
+.candidate-number{
+    color:var(--cyan);
+    font-size:18px;
     font-weight:bold;
 }
 
 .score{
     color:var(--green);
-    font-weight:bold;
 }
 
-.log{
-    height:210px;
-    overflow:auto;
-    padding:12px;
-    background:#020609;
-    color:#7dffb4;
-    white-space:pre-wrap;
-    font-size:10px;
-    border-radius:8px;
-}
-
-.candidate{
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:11px;
-    margin-bottom:8px;
-    background:#050b11;
-}
-
-.candidate strong{
-    color:var(--cyan);
-    font-size:18px;
-}
-
-.bar{
+.progress{
     height:5px;
-    background:#12202b;
+    background:#10202b;
     margin-top:7px;
     border-radius:5px;
 }
 
-.bar span{
+.progress span{
     display:block;
     height:100%;
     background:var(--cyan);
     border-radius:5px;
+}
+
+.log{
+    height:190px;
+    overflow:auto;
+    white-space:pre-wrap;
+    background:#020609;
+    color:#7dffb4;
+    padding:12px;
+    font-size:10px;
+}
+
+.downloads{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
 }
 
 @media(max-width:800px){
@@ -243,18 +234,16 @@ th{
 
 </head>
 
-
 <body>
-
 
 <header>
 
 <div class="brand">
-NEXO // ANALYTICS v2
+NEXO // ANALYTICS v3
 </div>
 
 <div class="online">
-● SYSTEM ONLINE
+● DATABASE ONLINE
 </div>
 
 </header>
@@ -264,8 +253,6 @@ NEXO // ANALYTICS v2
 
 <div class="grid">
 
-
-<!-- MARKET -->
 
 <section class="card wide">
 
@@ -283,128 +270,113 @@ Main Bazar
 
 </select>
 
-<div
-    id="marketName"
-    class="market"
->
+<div id="marketName"
+     class="market">
 Kalyan
 </div>
 
-<div
-    id="sourceUrl"
-    class="source"
->
+<div id="source"
+     class="source">
 https://dpbossss.boston/panel-chart-record/kalyan.php
 </div>
 
-<button id="fetch">
-⚡ FETCH + ANALYZE
+<button id="sync">
+⚡ SYNC + ANALYZE
 </button>
 
 </section>
 
 
-<!-- RECORDS -->
-
 <section class="card">
 
-<h2>📦 RECORDS</h2>
+<h2>📦 DATABASE</h2>
 
-<div
-    id="records"
-    class="metric"
->
+<div id="records"
+     class="metric">
 —
 </div>
 
 <div class="muted">
-Historical records analysed
+Stored historical records
 </div>
 
 </section>
 
-
-<!-- UNIQUE -->
 
 <section class="card">
 
 <h2>🔢 UNIQUE</h2>
 
-<div
-    id="unique"
-    class="metric"
->
+<div id="unique"
+     class="metric">
 —
 </div>
 
 <div class="muted">
-Unique 3-digit values
+Unique values
 </div>
 
 </section>
 
-
-<!-- ENGINE -->
 
 <section class="card">
 
-<h2>🧠 ENGINE</h2>
+<h2>🟢 STATUS</h2>
 
-<div
-    id="engine"
-    class="metric"
->
+<div id="status"
+     class="metric">
 READY
 </div>
 
-<div class="muted">
-Frequency + recency + gap +
-position statistics
+<div id="lastSync"
+     class="muted">
+No sync yet
 </div>
 
 </section>
 
-
-<!-- NEXT ANALYSIS -->
 
 <section class="card full">
 
 <h2>
-⚡ NEXO STATISTICAL CANDIDATE RANKING
+🧠 NEXO STATISTICAL CANDIDATE RANKING
 </h2>
 
 <div class="muted">
-Candidates are ranked from historical
-features. This is not a guaranteed
-prediction of a future gambling result.
+
+Historical feature ranking based on
+frequency, recent frequency, gap
+statistics and digit-position distribution.
+
+This is statistical analysis, not a
+guaranteed future gambling result.
+
 </div>
 
-<div
-    id="candidates"
-    style="margin-top:12px"
->
-No analysis yet.
+<div id="candidates"
+     style="margin-top:12px">
+No analysis loaded.
 </div>
 
 </section>
 
 
-<!-- CHART -->
-
 <section class="card wide">
 
-<h2>📈 TOP HISTORICAL FREQUENCY</h2>
+<h2>
+📈 FREQUENCY
+</h2>
 
 <canvas id="chart"></canvas>
 
 </section>
 
 
-<!-- DIGITS -->
-
 <section class="card">
 
-<h2>🔢 DIGIT DISTRIBUTION</h2>
+<h2>
+🔢 DIGITS
+</h2>
 
 <table>
 
@@ -415,123 +387,148 @@ No analysis yet.
 </tr>
 </thead>
 
-<tbody id="digits"></tbody>
+<tbody id="digits">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- TOP PANELS -->
-
 <section class="card wide">
 
-<h2>📊 HISTORICAL PANELS</h2>
+<h2>
+📊 TOP HISTORICAL VALUES
+</h2>
 
 <table>
 
 <thead>
 <tr>
-<th>Rank</th>
-<th>Panel</th>
-<th>Occurrences</th>
+<th>#</th>
+<th>Value</th>
+<th>Count</th>
 </tr>
 </thead>
 
-<tbody id="panels"></tbody>
+<tbody id="panels">
+</tbody>
 
 </table>
 
 </section>
 
-
-<!-- GAP -->
 
 <section class="card full">
 
-<h2>⏱ GAP ANALYSIS</h2>
+<h2>
+⏱ GAP ANALYSIS
+</h2>
 
 <table>
 
 <thead>
+
 <tr>
-<th>Panel</th>
-<th>Occurrences</th>
+<th>Value</th>
+<th>Count</th>
 <th>Last Seen</th>
-<th>Average Gap</th>
+<th>Avg Gap</th>
 <th>Min</th>
 <th>Max</th>
 </tr>
+
 </thead>
 
-<tbody id="gaps"></tbody>
+<tbody id="gaps">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- RECENT TREND -->
-
 <section class="card wide">
 
-<h2>📊 RECENT VS HISTORICAL</h2>
+<h2>
+📊 RECENT VS HISTORY
+</h2>
 
 <table>
 
 <thead>
+
 <tr>
-<th>Panel</th>
+<th>Value</th>
 <th>Total</th>
 <th>Recent</th>
 <th>Change</th>
 </tr>
+
 </thead>
 
-<tbody id="recent"></tbody>
+<tbody id="recent">
+</tbody>
 
 </table>
 
 </section>
 
 
-<!-- BACKTEST -->
-
 <section class="card">
 
-<h2>🧪 BACKTEST</h2>
+<h2>
+🧪 BACKTEST
+</h2>
 
-<div
-    id="backtest"
-    class="metric"
->
+<div id="backtest"
+     class="metric">
 —
 </div>
 
-<div
-    id="backtestInfo"
-    class="muted"
->
-Waiting for data
+<div id="backtestInfo"
+     class="muted">
+Waiting...
 </div>
 
 </section>
 
 
-<!-- LOG -->
+<section class="card">
+
+<h2>
+💾 EXPORT
+</h2>
+
+<div class="downloads">
+
+<button id="csv">
+CSV
+</button>
+
+<button id="json">
+JSON
+</button>
+
+</div>
+
+</section>
+
 
 <section class="card full">
 
-<h2>🖥 ANALYSIS LOG</h2>
+<h2>
+🖥 SYSTEM LOG
+</h2>
 
-<div
-    id="log"
-    class="log"
->
-SYSTEM READY
+<div id="log"
+     class="log">
+NEXO v3 READY
 
-Choose a market and press
-FETCH + ANALYZE.
+SQLite database initialized.
+
+Automatic synchronization:
+every 30 minutes.
 </div>
 
 </section>
@@ -541,11 +538,10 @@ FETCH + ANALYZE.
 
 <div class="muted">
 
-NEXO performs historical descriptive
-statistics and model evaluation.
-Scores do not establish that a particular
-panel, paana, jodi or other gambling
-outcome will occur next.
+NEXO v3 is designed for historical
+data analysis. Statistical scores and
+backtests do not establish certainty
+about future gambling outcomes.
 
 </div>
 
@@ -559,10 +555,7 @@ outcome will occur next.
 
 <script>
 
-let chart = null;
-
-
-const markets = {
+const MARKET_DATA = {
 
     kalyan:{
         name:"Kalyan",
@@ -577,6 +570,9 @@ const markets = {
     }
 
 };
+
+
+let chart = null;
 
 
 const $ = id =>
@@ -602,61 +598,42 @@ function log(message){
 
 function updateMarket(){
 
-    const item =
-        markets[$("market").value];
+    const market =
+        MARKET_DATA[
+            $("market").value
+        ];
 
     $("marketName")
         .textContent =
-        item.name;
+        market.name;
 
-    $("sourceUrl")
+    $("source")
         .textContent =
-        item.url;
+        market.url;
 
 }
 
 
-$("market")
-.addEventListener(
-    "change",
-    updateMarket
-);
-
-
-$("fetch")
-.addEventListener(
-    "click",
-    fetchData
-);
-
-
-async function fetchData(){
+async function sync(){
 
     const key =
         $("market").value;
 
-    const item =
-        markets[key];
-
-    $("fetch").disabled =
+    $("sync").disabled =
         true;
 
-    $("fetch").textContent =
-        "⏳ ANALYSING...";
+    $("sync").textContent =
+        "⏳ SYNCING...";
 
-    $("engine")
+    $("status")
         .textContent =
-        "RUNNING";
-
-    $("candidates")
-        .innerHTML =
-        "Fetching historical data...";
-
+        "SYNC";
 
     log("");
-    log("==============================");
-    log("MARKET: " + item.name);
-    log("FETCH: " + item.url);
+    log(
+        "STARTING SYNC: " +
+        key
+    );
 
 
     try{
@@ -680,80 +657,102 @@ async function fetchData(){
 
             throw new Error(
                 data.error ||
-                "Analysis failed"
+                "Sync failed"
             );
 
         }
 
 
-        const analysis =
+        const a =
             data.analysis;
 
 
         $("records")
             .textContent =
-            analysis.records;
+            a.records;
 
 
         $("unique")
             .textContent =
-            analysis.unique_values;
+            a.unique;
 
 
-        $("engine")
+        $("status")
             .textContent =
             "LIVE";
 
 
         log(
-            "HTTP: " +
-            data.source.http_status
+            "SOURCE STATUS: " +
+            data.sync.http_status
         );
 
         log(
-            "RECORDS: " +
-            analysis.records
+            "SOURCE RECORDS: " +
+            data.sync.records_found
         );
 
         log(
-            "UNIQUE: " +
-            analysis.unique_values
+            "NEW RECORDS: " +
+            data.sync.records_added
+        );
+
+        log(
+            "DATABASE TOTAL: " +
+            a.records
         );
 
 
         renderCandidates(
-            analysis.candidate_ranking
+            a.candidates
         );
-
 
         renderDigits(
-            analysis.digit_frequency
+            a.digits
         );
-
 
         renderPanels(
-            analysis.top_panels
+            a.top_panels
         );
-
 
         renderGaps(
-            analysis.gap_statistics
+            a.gaps
         );
-
 
         renderRecent(
-            analysis.recent_analysis
+            a.recent
         );
-
 
         renderBacktest(
-            analysis.backtest
+            a.backtest
         );
-
 
         renderChart(
-            analysis.top_panels
+            a.top_panels
         );
+
+
+        const latest =
+            await fetch(
+                "/api/analysis?market=" +
+                encodeURIComponent(key)
+            );
+
+        const latestData =
+            await latest.json();
+
+        if(
+            latestData.latest_sync
+        ){
+
+            $("lastSync")
+                .textContent =
+                "Last sync: " +
+                latestData
+                .latest_sync
+                .finished_at;
+
+        }
 
 
         log(
@@ -763,15 +762,9 @@ async function fetchData(){
 
     }catch(error){
 
-        $("engine")
+        $("status")
             .textContent =
             "ERROR";
-
-        $("candidates")
-            .innerHTML =
-            `<span class="error">
-                ${escapeHtml(error.message)}
-             </span>`;
 
         log(
             "ERROR: " +
@@ -780,11 +773,11 @@ async function fetchData(){
 
     }finally{
 
-        $("fetch").disabled =
+        $("sync").disabled =
             false;
 
-        $("fetch").textContent =
-            "⚡ FETCH + ANALYZE";
+        $("sync").textContent =
+            "⚡ SYNC + ANALYZE";
 
     }
 
@@ -797,7 +790,7 @@ function renderCandidates(items){
 
         $("candidates")
             .textContent =
-            "Insufficient historical data.";
+            "Not enough historical data.";
 
         return;
     }
@@ -818,15 +811,15 @@ function renderCandidates(items){
 
                     <div>
 
-                        <span class="rank">
+                        <span>
                         #${index + 1}
                         </span>
 
                         &nbsp;
 
-                        <strong>
+                        <span class="candidate-number">
                         ${item.value}
-                        </strong>
+                        </span>
 
                         &nbsp;
 
@@ -841,19 +834,19 @@ function renderCandidates(items){
                         Frequency:
                         ${item.frequency}
 
-                        &nbsp; | &nbsp;
+                        &nbsp; • &nbsp;
 
                         Recent:
-                        ${item.recent_frequency}
+                        ${item.recent}
 
-                        &nbsp; | &nbsp;
+                        &nbsp; • &nbsp;
 
                         Last seen:
                         ${item.last_seen ?? "—"}
 
                     </div>
 
-                    <div class="bar">
+                    <div class="progress">
 
                         <span
                             style="width:${score}%"
@@ -862,7 +855,9 @@ function renderCandidates(items){
                     </div>
 
                 </div>
+
                 `;
+
             }
         )
         .join("");
@@ -876,10 +871,19 @@ function renderDigits(items){
         items
         .map(
             item => `
+
             <tr>
-                <td>${item.digit}</td>
-                <td>${item.count}</td>
+
+                <td>
+                ${item.digit}
+                </td>
+
+                <td>
+                ${item.count}
+                </td>
+
             </tr>
+
             `
         )
         .join("");
@@ -893,11 +897,23 @@ function renderPanels(items){
         items
         .map(
             (item,index) => `
+
             <tr>
-                <td>${index + 1}</td>
-                <td>${item.value}</td>
-                <td>${item.count}</td>
+
+                <td>
+                ${index + 1}
+                </td>
+
+                <td>
+                ${item.value}
+                </td>
+
+                <td>
+                ${item.count}
+                </td>
+
             </tr>
+
             `
         )
         .join("");
@@ -915,7 +931,9 @@ function renderGaps(items){
 
             <tr>
 
-                <td>${item.value}</td>
+                <td>
+                ${item.value}
+                </td>
 
                 <td>
                 ${item.occurrences}
@@ -956,14 +974,22 @@ function renderRecent(items){
 
             <tr>
 
-                <td>${item.value}</td>
-
-                <td>${item.total}</td>
-
-                <td>${item.recent}</td>
+                <td>
+                ${item.value}
+                </td>
 
                 <td>
-                    ${Number(item.change).toFixed(4)}
+                ${item.total}
+                </td>
+
+                <td>
+                ${item.recent}
+                </td>
+
+                <td>
+                ${Number(
+                    item.change
+                ).toFixed(4)}
                 </td>
 
             </tr>
@@ -985,7 +1011,7 @@ function renderBacktest(result){
 
         $("backtestInfo")
             .textContent =
-            result.reason;
+            result.message;
 
         return;
     }
@@ -999,8 +1025,8 @@ function renderBacktest(result){
 
     $("backtestInfo")
         .textContent =
-        `${result.hits} matches /
-         ${result.tests} chronological tests`;
+        `${result.hits} / ${result.tests}
+        historical tests`;
 
 }
 
@@ -1033,7 +1059,7 @@ function renderChart(items){
                     datasets:[{
 
                         label:
-                            "Historical occurrences",
+                        "Historical occurrences",
 
                         data:
                             selected.map(
@@ -1041,10 +1067,10 @@ function renderChart(items){
                             ),
 
                         backgroundColor:
-                            "#00e5ff99",
+                        "#00e5ff99",
 
                         borderColor:
-                            "#00e5ff",
+                        "#00e5ff",
 
                         borderWidth:1
 
@@ -1090,16 +1116,48 @@ function renderChart(items){
 }
 
 
-function escapeHtml(value){
+function download(type){
 
-    return String(value)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+    const market =
+        $("market").value;
+
+    window.location.href =
+        "/api/export/" +
+        type +
+        "?market=" +
+        encodeURIComponent(
+            market
+        );
 
 }
+
+
+$("market")
+.addEventListener(
+    "change",
+    updateMarket
+);
+
+
+$("sync")
+.addEventListener(
+    "click",
+    sync
+);
+
+
+$("csv")
+.addEventListener(
+    "click",
+    () => download("csv")
+);
+
+
+$("json")
+.addEventListener(
+    "click",
+    () => download("json")
+);
 
 
 updateMarket();

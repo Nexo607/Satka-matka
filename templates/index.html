@@ -10,22 +10,21 @@ name="viewport"
 content="width=device-width,initial-scale=1"
 >
 
-<title>NEXO Historical Analytics</title>
+<title>NEXO v5</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 :root{
---bg:#03070d;
+--bg:#03070c;
 --panel:#08131d;
 --cyan:#00e5ff;
 --green:#00ff88;
---yellow:#ffe600;
---red:#ff5068;
---text:#e5fbff;
---muted:#7890a6;
---line:#163143;
+--yellow:#ffd43b;
+--red:#ff4264;
+--muted:#7890a5;
+--line:#173344;
 }
 
 *{
@@ -37,10 +36,10 @@ margin:0;
 background:
 radial-gradient(
 circle at top,
-#0b2638,
-#03070d 60%
+#0b2739,
+#03070c 60%
 );
-color:var(--text);
+color:#e8fbff;
 font-family:
 ui-monospace,
 SFMono-Regular,
@@ -49,15 +48,17 @@ monospace;
 }
 
 header{
-padding:20px;
-border-bottom:1px solid var(--line);
+padding:18px;
+border-bottom:
+1px solid var(--line);
 display:flex;
 justify-content:space-between;
-gap:15px;
+align-items:center;
 flex-wrap:wrap;
+gap:10px;
 }
 
-.brand{
+.logo{
 color:var(--cyan);
 font-size:20px;
 font-weight:900;
@@ -68,9 +69,9 @@ color:var(--green);
 }
 
 main{
-max-width:1200px;
+max-width:1250px;
 margin:auto;
-padding:15px;
+padding:14px;
 }
 
 .grid{
@@ -82,10 +83,12 @@ gap:14px;
 
 .card{
 grid-column:span 4;
-background:#07131cee;
+background:#07131dee;
 border:1px solid var(--line);
-border-radius:15px;
-padding:16px;
+border-radius:14px;
+padding:15px;
+box-shadow:
+0 0 25px #00e5ff08;
 }
 
 .wide{
@@ -97,18 +100,19 @@ grid-column:1/-1;
 }
 
 h2{
-font-size:13px;
+font-size:12px;
 color:var(--cyan);
 letter-spacing:.1em;
 }
 
-button,
-select{
+select,
+button{
 width:100%;
-padding:13px;
-margin-top:9px;
-border-radius:9px;
-border:1px solid #00e5ff66;
+padding:12px;
+margin-top:8px;
+border-radius:8px;
+border:
+1px solid #00e5ff66;
 background:#06151e;
 color:var(--cyan);
 font:inherit;
@@ -119,60 +123,51 @@ cursor:pointer;
 }
 
 button:hover{
-background:#07303b;
+background:#083340;
 }
 
 .metric{
-font-size:35px;
+font-size:32px;
 color:var(--green);
-margin:10px 0;
+margin:8px 0;
 }
 
 .muted{
-font-size:12px;
+font-size:11px;
 color:var(--muted);
 line-height:1.6;
 }
 
-.status{
+.badge{
 display:inline-block;
-margin-top:10px;
-padding:7px 10px;
-border-radius:8px;
-background:#003626;
+margin-top:9px;
+padding:6px 9px;
+border-radius:7px;
+background:#003b2a;
 color:var(--green);
 }
 
 .warning{
-padding:12px;
-margin:10px 0;
-border-left:3px solid var(--yellow);
-background:#171500;
-font-size:11px;
-line-height:1.6;
-color:#cdd6dc;
-}
-
-.log{
-height:160px;
-overflow:auto;
-background:#020508;
-padding:12px;
-font-size:11px;
-color:#70ffb0;
-white-space:pre-wrap;
+margin-top:12px;
+padding:11px;
+border-left:
+3px solid var(--yellow);
+background:#191600;
+font-size:10px;
+line-height:1.7;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-font-size:12px;
+font-size:11px;
 }
 
 th,
 td{
-padding:9px 6px;
-border-bottom:1px solid var(--line);
+padding:8px 5px;
+border-bottom:
+1px solid var(--line);
 text-align:left;
 }
 
@@ -180,13 +175,24 @@ th{
 color:var(--cyan);
 }
 
-.green{
-color:var(--green);
+.panel{
+color:white;
+font-weight:900;
 }
 
-.panel{
-font-weight:bold;
-color:white;
+.score{
+color:var(--green);
+font-weight:900;
+}
+
+.log{
+height:170px;
+overflow:auto;
+white-space:pre-wrap;
+background:#020508;
+padding:10px;
+color:#71ffb0;
+font-size:10px;
 }
 
 @media(max-width:800px){
@@ -197,11 +203,7 @@ grid-column:1/-1;
 }
 
 main{
-padding:9px;
-}
-
-.brand{
-font-size:16px;
+padding:8px;
 }
 
 }
@@ -214,8 +216,8 @@ font-size:16px;
 
 <header>
 
-<div class="brand">
-NEXO // HISTORICAL ANALYTICS
+<div class="logo">
+NEXO v5 // QUANT ANALYTICS
 </div>
 
 <div class="online">
@@ -224,51 +226,64 @@ NEXO // HISTORICAL ANALYTICS
 
 </header>
 
+
 <main>
 
 <div class="grid">
 
+
 <section class="card wide">
 
-<h2>🎯 MARKET</h2>
+<h2>🚀 DATA SOURCE</h2>
 
 <select id="market">
 
 <option value="kalyan">
-Kalyan
+KALYAN
 </option>
 
 <option value="main_bazar">
-Main Bazar
+MAIN BAZAR
 </option>
 
 </select>
 
 <button onclick="sync()">
-⚡ FETCH FULL HISTORY
+⚡ FETCH LATEST HISTORY
 </button>
 
 <button onclick="analysis()">
-🔄 REFRESH ANALYSIS
+🔄 RUN NEXO v5 ANALYSIS
 </button>
 
-<div id="syncStatus" class="status">
+<div
+id="status"
+class="badge"
+>
 READY
 </div>
+
+<div
+id="source"
+class="muted"
+></div>
 
 </section>
 
 
 <section class="card">
 
-<h2>DATABASE</h2>
+<h2>HISTORICAL RECORDS</h2>
 
-<div id="records" class="metric">
+<div
+id="records"
+class="metric"
+>
 0
 </div>
 
 <div class="muted">
-Historical records
+Stored observations
 </div>
 
 </section>
@@ -278,59 +293,58 @@ Historical records
 
 <h2>UNIQUE PANELS</h2>
 
-<div id="unique" class="metric">
+<div
+id="unique"
+class="metric"
+>
 0
 </div>
 
 <div class="muted">
-Unique historical values
+Distinct historical panels
 </div>
-
-</section>
-
-
-<section class="card wide">
-
-<h2>📊 FREQUENCY</h2>
-
-<canvas id="chart"></canvas>
 
 </section>
 
 
 <section class="card">
 
-<h2>🔢 DIGIT DISTRIBUTION</h2>
+<h2>ENTROPY</h2>
 
-<table>
+<div
+id="entropy"
+class="metric"
+>
+0
+</div>
 
-<thead>
-<tr>
-<th>Digit</th>
-<th>Count</th>
-</tr>
-</thead>
-
-<tbody id="digits">
-</tbody>
-
-</table>
+<div class="muted">
+Historical distribution entropy
+</div>
 
 </section>
 
 
 <section class="card wide">
 
-<h2>🧠 NEXO ALGORITHM RANKING</h2>
+<h2>📊 TOP HISTORICAL FREQUENCY</h2>
+
+<canvas id="chart"></canvas>
+
+</section>
+
+
+<section class="card wide">
+
+<h2>🧠 NEXO TOP 10</h2>
 
 <div class="warning">
 
-This ranking applies the supplied historical-analysis
-methodology: frequency, recent frequency, repetition,
-gap, digit-position distribution and consistency.
-
-It is a statistical ranking, not a guaranteed future
-gambling result.
+These are ranked historical
+statistical candidates based on
+the model's features. The score
+is NOT a guaranteed probability
+of a future result.
 
 </div>
 
@@ -343,13 +357,36 @@ gambling result.
 <th>Panel</th>
 <th>Score</th>
 <th>Freq</th>
+<th>25W</th>
+<th>Momentum</th>
 <th>Gap</th>
 </tr>
 
 </thead>
 
-<tbody id="ranking">
-</tbody>
+<tbody id="top10"></tbody>
+
+</table>
+
+</section>
+
+
+<section class="card">
+
+<h2>🔢 DIGIT DISTRIBUTION</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Digit</th>
+<th>Count</th>
+</tr>
+
+</thead>
+
+<tbody id="digits"></tbody>
 
 </table>
 
@@ -358,7 +395,7 @@ gambling result.
 
 <section class="card wide">
 
-<h2>⏱ GAP ANALYSIS</h2>
+<h2>📈 FEATURE DETAILS</h2>
 
 <table>
 
@@ -366,26 +403,44 @@ gambling result.
 
 <tr>
 <th>Panel</th>
-<th>Occurrences</th>
-<th>Gap</th>
+<th>Recency</th>
+<th>Digit</th>
+<th>Stability</th>
+<th>Drift</th>
 </tr>
 
 </thead>
 
-<tbody id="gaps">
-</tbody>
+<tbody id="features"></tbody>
 
 </table>
 
 </section>
 
 
-<section class="card full">
+<section class="card wide">
 
-<h2>🧪 BACKTEST</h2>
+<h2>🧪 WALK-FORWARD BACKTEST</h2>
 
-<div id="backtest" class="muted">
-Waiting for sufficient historical data.
+<div
+id="backtest"
+class="muted"
+>
+Waiting...
+</div>
+
+</section>
+
+
+<section class="card wide">
+
+<h2>🧬 PERMUTATION / NULL TEST</h2>
+
+<div
+id="permutation"
+class="muted"
+>
+Waiting...
 </div>
 
 </section>
@@ -393,13 +448,17 @@ Waiting for sufficient historical data.
 
 <section class="card full">
 
-<h2>🛰 SYSTEM LOG</h2>
+<h2>🛰 NEXO SYSTEM LOG</h2>
 
-<div id="log" class="log">
-NEXO READY
+<div
+id="log"
+class="log"
+>
+NEXO v5 initialized.
 </div>
 
 </section>
+
 
 </div>
 
@@ -408,59 +467,55 @@ NEXO READY
 
 <script>
 
-let chart=null;
+let chart;
 
 
-function writeLog(message){
-
-const box=
-document.getElementById("log");
-
-box.textContent +=
-"\n["+
-new Date().toLocaleTimeString()+
-"] "+
-message;
-
-box.scrollTop=
-box.scrollHeight;
-
+function el(id){
+return document.getElementById(id);
 }
 
 
 function market(){
+return el("market").value;
+}
 
-return document
-.getElementById("market")
- .value;
+
+function writeLog(text){
+
+el("log").textContent +=
+"\n[" +
+new Date().toLocaleTimeString() +
+"] " +
+text;
+
+el("log").scrollTop =
+el("log").scrollHeight;
 
 }
 
 
 async function sync(){
 
-const m=market();
+const m = market();
 
-document
-.getElementById("syncStatus")
- .textContent=
-"FETCHING...";
+el("status").textContent =
+"SYNCING";
 
 writeLog(
-"Fetching full "+
-m+
-" historical dataset..."
+"Downloading " +
+m +
+" historical source..."
 );
 
 try{
 
-const response=
+const r =
 await fetch(
-"/api/sync/"+m
+"/api/sync/" + m
 );
 
-const data=
-await response.json();
+const data =
+await r.json();
 
 if(!data.ok){
 
@@ -470,36 +525,38 @@ data.error
 
 }
 
+el("status").textContent =
+"SYNC COMPLETE";
+
 writeLog(
-"Source values: "+
-data.fetched
+"Extracted: " +
+data.extracted
 );
 
 writeLog(
-"New database records: "+
+"New records: " +
 data.inserted
 );
 
-document
-.getElementById("syncStatus")
- .textContent=
-"SYNC COMPLETE";
-
-render(
-data.analysis,
-data.backtest
+writeLog(
+"Stored: " +
+data.stored
 );
 
-}catch(error){
+render(
+data.analysis
+);
 
-document
-.getElementById("syncStatus")
- .textContent=
+}
+
+catch(e){
+
+el("status").textContent =
 "ERROR";
 
 writeLog(
-"ERROR: "+
-error.message
+"ERROR: " +
+e.message
 );
 
 }
@@ -509,17 +566,21 @@ error.message
 
 async function analysis(){
 
-const m=market();
+const m = market();
+
+writeLog(
+"Running NEXO v5..."
+);
 
 try{
 
-const response=
+const r =
 await fetch(
-"/api/analysis/"+m
+"/api/analysis/" + m
 );
 
-const data=
-await response.json();
+const data =
+await r.json();
 
 if(!data.ok){
 
@@ -529,20 +590,20 @@ data.error
 
 }
 
+el("status").textContent =
+"ANALYSIS COMPLETE";
+
 render(
-data.analysis,
-data.backtest
+data.analysis
 );
 
-writeLog(
-"Analysis refreshed."
-);
+}
 
-}catch(error){
+catch(e){
 
 writeLog(
-"ERROR: "+
-error.message
+"ERROR: " +
+e.message
 );
 
 }
@@ -550,44 +611,40 @@ error.message
 }
 
 
-function render(data,backtest){
+function render(a){
 
-document
-.getElementById("records")
- .textContent=
-data.records;
+el("records").textContent =
+a.records;
 
-document
-.getElementById("unique")
- .textContent=
-data.unique;
+el("unique").textContent =
+a.unique;
+
+el("entropy").textContent =
+a.entropy;
+
+el("source").textContent =
+"Market: " +
+market();
 
 
 /* DIGITS */
 
-document
-.getElementById("digits")
- .innerHTML=
-data.digits
-.map(x=>`
-
+el("digits").innerHTML =
+a.digits
+.map(d => `
 <tr>
-<td>${x.digit}</td>
-<td>${x.count}</td>
+<td>${d.digit}</td>
+<td>${d.count}</td>
 </tr>
-
 `)
 .join("");
 
 
-/* RANKING */
+/* TOP 10 */
 
-document
-.getElementById("ranking")
- .innerHTML=
-data.ranking
-.map((x,i)=>`
-
+el("top10").innerHTML =
+a.top10
+.map((x,i) => `
 <tr>
 
 <td>${i+1}</td>
@@ -596,7 +653,7 @@ data.ranking
 ${x.panel}
 </td>
 
-<td class="green">
+<td class="score">
 ${x.score}
 </td>
 
@@ -605,24 +662,28 @@ ${x.frequency}
 </td>
 
 <td>
+${x.recent25}
+</td>
+
+<td>
+${x.momentum}
+</td>
+
+<td>
 ${x.gap}
 </td>
 
 </tr>
-
 `)
 .join("");
 
 
-/* GAPS */
+/* FEATURE TABLE */
 
-document
-.getElementById("gaps")
- .innerHTML=
-data.gaps
-.slice(0,30)
-.map(x=>`
-
+el("features").innerHTML =
+a.ranking
+.slice(0,15)
+.map(x => `
 <tr>
 
 <td class="panel">
@@ -630,51 +691,54 @@ ${x.panel}
 </td>
 
 <td>
-${x.count}
+${x.recency}
 </td>
 
 <td>
-${x.gap}
+${x.digit_strength}
+</td>
+
+<td>
+${x.stability}
+</td>
+
+<td>
+${x.drift}
 </td>
 
 </tr>
-
 `)
 .join("");
 
 
 /* CHART */
 
-const labels=
-data.frequency
+const labels =
+a.frequency
 .slice(0,20)
-.map(x=>x.panel);
+.map(x => x.panel);
 
-const values=
-data.frequency
+const values =
+a.frequency
 .slice(0,20)
-.map(x=>x.count);
+.map(x => x.count);
 
 if(chart){
-
 chart.destroy();
-
 }
 
-chart=
+chart =
 new Chart(
-document
-.getElementById("chart"),
+el("chart"),
 {
 type:"bar",
 
 data:{
-labels:labels,
+labels,
 
 datasets:[{
-
 label:
-"Historical frequency",
+"Historical occurrences",
 
 data:values,
 
@@ -685,7 +749,6 @@ borderColor:
 "#00e5ff",
 
 borderWidth:1
-
 }]
 },
 
@@ -695,25 +758,23 @@ responsive:true,
 plugins:{
 legend:{
 labels:{
-color:"#dffcff"
+color:"#e8fbff"
 }
 }
 },
 
 scales:{
-
 x:{
 ticks:{
-color:"#7890a6"
+color:"#7890a5"
 }
 },
 
 y:{
 ticks:{
-color:"#7890a6"
+color:"#7890a5"
 }
 }
-
 }
 
 }
@@ -724,48 +785,115 @@ color:"#7890a6"
 
 /* BACKTEST */
 
-const box=
-document
-.getElementById("backtest");
+const b =
+a.walk_forward;
 
 if(
-!backtest ||
-!backtest.available
+!b ||
+!b.available
 ){
 
-box.textContent=
-backtest?.message ||
-"Not enough historical data.";
-
-return;
+el("backtest").textContent =
+b?.message ||
+"Insufficient history.";
 
 }
+else{
 
-box.innerHTML=`
+el("backtest").innerHTML = `
 
-Training records:
-<b>${backtest.training_records}</b>
+Walk-forward windows:
+<b>${b.windows}</b>
+
+<br><br>
+
+NEXO:
+<b>${b.nexo}%</b>
+
 <br>
 
-Testing records:
-<b>${backtest.testing_records}</b>
+Frequency baseline:
+<b>${b.frequency}%</b>
+
 <br>
 
-Top historical candidates tested:
-<b>${backtest.top_candidates.length}</b>
+Recent baseline:
+<b>${b.recent}%</b>
+
 <br>
 
-Historical test hit rate:
-<b>${backtest.historical_hit_rate}%</b>
+Random baseline:
+<b>${b.random}%</b>
+
+<br><br>
+
+Difference versus frequency:
+<b>
+${(
+b.nexo -
+b.frequency
+).toFixed(3)}
+percentage points
+</b>
 
 `;
 
 }
 
 
-document
-.getElementById("market")
- .addEventListener(
+/* PERMUTATION */
+
+const p =
+a.permutation;
+
+if(
+!p ||
+!p.available
+){
+
+el("permutation").textContent =
+p?.message ||
+"Insufficient history.";
+
+}
+else{
+
+el("permutation").innerHTML = `
+
+Repetitions:
+<b>${p.repetitions}</b>
+
+<br>
+
+Observed Top-10 score:
+<b>${p.observed_top10_score}</b>
+
+<br>
+
+Null-model mean:
+<b>${p.null_mean}</b>
+
+<br>
+
+Permutation p-value:
+<b>${p.p_value}</b>
+
+<br><br>
+
+This test asks whether the
+observed ranking statistic is
+unusual relative to shuffled
+historical sequences.
+
+`;
+
+}
+
+}
+
+
+el("market")
+.addEventListener(
 "change",
 analysis
 );

@@ -1,464 +1,129 @@
-from __future__ import annotations
-
+import math
 from collections import Counter
-from statistics import mean
 
 
-def frequency(values):
+def normalize(value, minimum, maximum):
+    if maximum <= minimum:
+        return 0.5
+    return (value - minimum) / (maximum - minimum)
 
-    counter = Counter(values)
 
-    return [
-        {
-            "value": value,
-            "count": count
+def analyze(records):
+    panels = [r["panel"] for r in records if valid_panel(r["panel"])]
+
+    if not panels:
+        return {
+            "records": 0,
+            "unique": 0,
+            "frequency": [],
+            "digit_frequency": [],
+            "gaps": [],
+            "top_historical": []
         }
-        for value, count
-        in counter.most_common()
-    ]
 
+    frequency = Counter(panels)
 
-def digit_distribution(values):
+    digit_frequency = Counter()
 
-    counter = Counter()
+    for panel in panels:
+        for digit in panel:
+            digit_frequency[digit] += 1
 
-    for value in values:
-        counter.update(value)
+    # Last occurrence position.
+    last_seen = {}
 
-    return [
-        {
-            "digit": digit,
-            "count": counter[digit]
-        }
-        for digit in "0123456789"
-    ]
+    for index, panel in enumerate(panels):
+        last_seen[panel] = index
 
-
-def position_distribution(values):
-
-    counters = [
-        Counter(),
-        Counter(),
-        Counter()
-    ]
-
-    for value in values:
-
-        if len(value) != 3:
-            continue
-
-        for position, digit in enumerate(value):
-            counters[position][digit] += 1
-
-    output = []
-
-    for index, counter in enumerate(counters):
-
-        output.append({
-
-            "position":
-                index + 1,
-
-            "distribution": [
-                {
-                    "digit": digit,
-                    "count": counter[digit]
-                }
-                for digit in "0123456789"
-            ]
-
-        })
-
-    return output
-
-
-def gap_analysis(values):
-
-    positions = {}
-
-    for index, value in enumerate(values):
-
-        positions.setdefault(
-            value,
-            []
-        ).append(index)
-
-    result = []
-
-    total = len(values)
-
-    for value, indexes in positions.items():
-
-        gaps = [
-            indexes[i] - indexes[i - 1]
-            for i in range(
-                1,
-                len(indexes)
-            )
-        ]
-
-        last_seen = (
-            total - 1 - indexes[-1]
-        )
-
-        result.append({
-
-            "value":
-                value,
-
-            "occurrences":
-                len(indexes),
-
-            "last_seen":
-                last_seen,
-
-            "average_gap":
-                round(
-                    mean(gaps),
-                    2
-                )
-                if gaps
-                else None,
-
-            "min_gap":
-                min(gaps)
-                if gaps
-                else None,
-
-            "max_gap":
-                max(gaps)
-                if gaps
-                else None
-
-        })
-
-    result.sort(
-        key=lambda item: (
-            -item["occurrences"],
-            item["last_seen"]
-        )
-    )
-
-    return result
-
-
-def recent_analysis(values):
-
-    if not values:
-        return []
-
-    window = min(
-        100,
-        len(values)
-    )
-
-    recent = values[-window:]
-
-    full = Counter(values)
-    recent_counter = Counter(recent)
-
-    result = []
-
-    for value, total in full.items():
-
-        recent_count = (
-            recent_counter[value]
-        )
-
-        historical_rate = (
-            total / len(values)
-        )
-
-        recent_rate = (
-            recent_count / len(recent)
-        )
-
-        result.append({
-
-            "value":
-                value,
-
-            "total":
-                total,
-
-            "recent":
-                recent_count,
-
-            "change":
-                round(
-                    recent_rate -
-                    historical_rate,
-                    6
-                )
-
-        })
-
-    result.sort(
-        key=lambda item:
-            item["change"],
-        reverse=True
-    )
-
-    return result
-
-
-def candidate_ranking(values):
-
-    if len(values) < 20:
-        return []
-
-    total = len(values)
-
-    recent_size = min(
-        100,
-        total
-    )
-
-    recent = values[-recent_size:]
-
-    full_counter = Counter(values)
-    recent_counter = Counter(recent)
-
-    max_frequency = max(
-        full_counter.values()
-    )
-
-    max_recent = max(
-        recent_counter.values(),
-        default=1
-    )
-
-    gaps = gap_analysis(values)
-
-    gap_map = {
-        item["value"]: item
-        for item in gaps
-    }
-
-    position_counters = [
-        Counter(),
-        Counter(),
-        Counter()
-    ]
-
-    for value in values:
-
-        if len(value) != 3:
-            continue
-
-        for position, digit in enumerate(value):
-            position_counters[
-                position
-            ][digit] += 1
+    total = len(panels)
 
     candidates = []
 
-    for value, count in full_counter.items():
+    for panel, count in frequency.items():
 
-        frequency_score = (
-            count /
-            max_frequency
-        ) * 40
+        last_index = last_seen[panel]
+        gap = total - 1 - last_index
 
-        recent_score = (
-            recent_counter[value] /
-            max_recent
-        ) * 30
+        # Frequency component.
+        freq_score = count / total
 
-        position_score = 0
+        # Recency component.
+        recency_score = 1 / (1 + gap)
 
-        if len(value) == 3:
+        # Moderate gap component.
+        gap_score = 1 / math.sqrt(1 + gap)
 
-            for position, digit in enumerate(value):
+        # Digit diversity.
+        digits = [int(x) for x in panel]
+        digit_mean = sum(digits) / 3
+        digit_variance = sum(
+            (x - digit_mean) ** 2 for x in digits
+        ) / 3
 
-                position_total = sum(
-                    position_counters[
-                        position
-                    ].values()
-                )
+        digit_stability = 1 / (1 + digit_variance)
 
-                if position_total:
-
-                    position_score += (
-                        position_counters[
-                            position
-                        ][digit] /
-                        position_total
-                    ) * 10
-
-        gap_score = 0
-
-        gap = gap_map.get(value)
-
-        if gap:
-
-            average_gap = (
-                gap["average_gap"]
-            )
-
-            if (
-                average_gap is not None
-                and average_gap > 0
-            ):
-
-                ratio = (
-                    gap["last_seen"] /
-                    average_gap
-                )
-
-                gap_score = min(
-                    ratio,
-                    2
-                ) / 2 * 20
-
-        score = min(
-            frequency_score +
-            recent_score +
-            position_score +
-            gap_score,
-            100
+        # Composite HISTORICAL score.
+        score = (
+            0.40 * freq_score +
+            0.30 * recency_score +
+            0.20 * gap_score +
+            0.10 * digit_stability
         )
 
         candidates.append({
-
-            "value":
-                value,
-
-            "score":
-                round(score, 2),
-
-            "frequency":
-                count,
-
-            "recent":
-                recent_counter[value],
-
-            "last_seen":
-                gap["last_seen"]
-                if gap
-                else None,
-
-            "average_gap":
-                gap["average_gap"]
-                if gap
-                else None
-
+            "panel": panel,
+            "occurrences": count,
+            "gap": gap,
+            "frequency_score": round(freq_score, 6),
+            "recency_score": round(recency_score, 6),
+            "gap_score": round(gap_score, 6),
+            "digit_stability": round(digit_stability, 6),
+            "score": round(score, 6)
         })
 
     candidates.sort(
-        key=lambda item:
-            item["score"],
+        key=lambda x: x["score"],
         reverse=True
     )
 
-    return candidates[:20]
-
-
-def backtest(values):
-
-    if len(values) < 100:
-
-        return {
-
-            "available":
-                False,
-
-            "tests":
-                0,
-
-            "hits":
-                0,
-
-            "hit_rate":
-                None,
-
-            "message":
-                "Need at least 100 records."
-
-        }
-
-    tests = 0
-    hits = 0
-
-    for index in range(
-        50,
-        len(values)
-    ):
-
-        history = values[:index]
-
-        top = {
-            value
-            for value, _ in
-            Counter(history)
-            .most_common(10)
-        }
-
-        actual = values[index]
-
-        tests += 1
-
-        if actual in top:
-            hits += 1
-
-    rate = (
-        hits / tests * 100
-    )
-
     return {
-
-        "available":
-            True,
-
-        "tests":
-            tests,
-
-        "hits":
-            hits,
-
-        "hit_rate":
-            round(rate, 2),
-
-        "message":
-            "Historical walk-forward evaluation."
-
+        "records": total,
+        "unique": len(frequency),
+        "frequency": [
+            {
+                "panel": panel,
+                "count": count
+            }
+            for panel, count in frequency.most_common(50)
+        ],
+        "digit_frequency": [
+            {
+                "digit": digit,
+                "count": digit_frequency[digit]
+            }
+            for digit in sorted(digit_frequency)
+        ],
+        "gaps": sorted(
+            [
+                {
+                    "panel": panel,
+                    "gap": total - 1 - last_seen[panel]
+                }
+                for panel in frequency
+            ],
+            key=lambda x: x["gap"]
+        )[:50],
+        "top_historical": candidates[:10]
     }
 
 
-def analyze(values):
+def valid_panel(value):
+    if value is None:
+        return False
 
-    gaps = gap_analysis(values)
+    value = str(value).strip()
 
-    return {
+    if len(value) != 3:
+        return False
 
-        "records":
-            len(values),
-
-        "unique":
-            len(set(values)),
-
-        "frequency":
-            frequency(values)[:50],
-
-        "top_panels":
-            frequency(values)[:20],
-
-        "digits":
-            digit_distribution(values),
-
-        "positions":
-            position_distribution(values),
-
-        "gaps":
-            gaps[:100],
-
-        "recent":
-            recent_analysis(values)[:50],
-
-        "candidates":
-            candidate_ranking(values),
-
-        "backtest":
-            backtest(values)
-
-    }
+    return value.isdigit()

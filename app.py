@@ -10,6 +10,8 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, render_template_string, request
 
+import adaptive_engine
+
 app = Flask(__name__)
 
 # ============================================================
@@ -84,8 +86,6 @@ def init_db():
 def valid_source(url):
     """
     Only allow the two known historical sources.
-    This avoids arbitrary URL fetching and eliminates
-    malformed URL validation problems from the frontend.
     """
     return url in {x["url"] for x in MARKETS.values()}
 
@@ -132,8 +132,6 @@ def normalize_panel(value):
     into:
 
         780
-
-    Only exactly three digits are accepted.
     """
 
     digits = re.findall(r"\d", value)
@@ -147,20 +145,6 @@ def normalize_panel(value):
 def extract_panels_from_cell(cell):
     """
     Extract three-digit panel values from a table cell.
-
-    The source pages commonly display a panel as vertically
-    separated digits, for example:
-
-        7
-        8
-        0
-
-    BeautifulSoup converts this into text containing spaces
-    and/or newlines.
-
-    We deliberately parse individual table cells instead of
-    scraping the entire page because the page also contains
-    dates, jodis, times and navigation numbers.
     """
 
     text = cell.get_text(" ", strip=True)
@@ -168,12 +152,9 @@ def extract_panels_from_cell(cell):
     if not text:
         return []
 
-    # Remove obvious placeholders.
     if "*" in text:
         return []
 
-    # Find a standalone sequence of exactly three digits
-    # allowing whitespace between digits.
     matches = re.findall(
         r"(?<!\d)(\d)\s+(\d)\s+(\d)(?!\d)",
         text
@@ -187,7 +168,6 @@ def extract_panels_from_cell(cell):
         if len(panel) == 3:
             result.append(panel)
 
-    # Some HTML versions may put the three digits together.
     if not matches:
         compact = re.sub(r"\s+", "", text)
 
@@ -211,44 +191,68 @@ def parse_panels(html):
     panels = []
     rows_found = 0
 
-    # First preference: actual HTML tables.
     for table in soup.find_all("table"):
+
         for tr in table.find_all("tr"):
+
             cells = tr.find_all(["td", "th"])
 
             if not cells:
                 continue
 
-            row_text = tr.get_text(" ", strip=True)
+            row_text = tr.get_text(
+                " ",
+                strip=True
+            )
 
-            # Skip header rows.
             if "Date" in row_text and "Mon" in row_text:
                 continue
 
             found_in_row = []
 
-            # The first cell is generally the date/range.
-            # Start from the remaining cells.
             for cell in cells[1:]:
+
                 found_in_row.extend(
                     extract_panels_from_cell(cell)
                 )
 
             if found_in_row:
+
                 rows_found += 1
-                panels.extend(found_in_row)
 
-    # Fallback parser if table markup changes.
+                panels.extend(
+                    found_in_row
+                )
+
     if not panels:
-        text = soup.get_text("\n", strip=True)
 
-        lines = [x.strip() for x in text.splitlines() if x.strip()]
+        text = soup.get_text(
+            "\n",
+            strip=True
+        )
+
+        lines = [
+            x.strip()
+            for x in text.splitlines()
+            if x.strip()
+        ]
 
         for line in lines:
-            compact = re.sub(r"\s+", "", line)
 
-            if re.fullmatch(r"\d{3}", compact):
-                panels.append(compact)
+            compact = re.sub(
+                r"\s+",
+                "",
+                line
+            )
+
+            if re.fullmatch(
+                r"\d{3}",
+                compact
+            ):
+
+                panels.append(
+                    compact
+                )
 
     return panels, rows_found
 
@@ -257,22 +261,36 @@ def parse_panels(html):
 # DATABASE STORAGE
 # ============================================================
 
-def save_panels(market, panels, source):
-    now = datetime.now(timezone.utc).isoformat()
+def save_panels(
+    market,
+    panels,
+    source
+):
+
+    now = datetime.now(
+        timezone.utc
+    ).isoformat()
 
     conn = db()
 
     inserted = 0
 
     for panel in panels:
+
         try:
+
             cursor = conn.execute(
                 """
                 INSERT OR IGNORE INTO panels
                 (market, panel, source, fetched_at)
                 VALUES (?, ?, ?, ?)
                 """,
-                (market, panel, source, now),
+                (
+                    market,
+                    panel,
+                    source,
+                    now,
+                ),
             )
 
             if cursor.rowcount:
@@ -309,6 +327,7 @@ def save_panels(market, panels, source):
 # ============================================================
 
 def minmax(values):
+
     if not values:
         return {}
 
@@ -316,7 +335,10 @@ def minmax(values):
     hi = max(values)
 
     if hi == lo:
-        return {k: 0.5 for k in range(len(values))}
+        return {
+            k: 0.5
+            for k in range(len(values))
+        }
 
     return {
         i: (v - lo) / (hi - lo)
@@ -324,33 +346,29 @@ def minmax(values):
     }
 
 
-def percentile_rank(value, values):
+def percentile_rank(
+    value,
+    values
+):
+
     if not values:
         return 0.0
 
-    less_equal = sum(v <= value for v in values)
+    less_equal = sum(
+        v <= value
+        for v in values
+    )
 
-    return less_equal / len(values)
+    return (
+        less_equal /
+        len(values)
+    )
 
 
 def analyze_panels(panels):
-    """
-    NEXO statistical ranking.
-
-    Features:
-      - historical frequency
-      - recent frequency
-      - recency decay
-      - gap
-      - digit distribution
-      - positional stability
-
-    IMPORTANT:
-    This is descriptive/statistical ranking only.
-    It does not guarantee a future gambling outcome.
-    """
 
     if not panels:
+
         return {
             "records": 0,
             "unique": 0,
@@ -360,56 +378,109 @@ def analyze_panels(panels):
             "backtest": None,
         }
 
-    counter = Counter(panels)
+    counter = Counter(
+        panels
+    )
 
-    total = len(panels)
+    total = len(
+        panels
+    )
 
-    # Recent window.
-    recent_window = min(100, total)
-    recent = panels[-recent_window:]
+    recent_window = min(
+        100,
+        total
+    )
 
-    recent_counter = Counter(recent)
+    recent = panels[
+        -recent_window:
+    ]
 
-    # Last occurrence / gap.
+    recent_counter = Counter(
+        recent
+    )
+
     last_seen = {}
 
-    for index, panel in enumerate(panels):
-        last_seen[panel] = index
+    for index, panel in enumerate(
+        panels
+    ):
 
-    candidates = sorted(counter.keys())
+        last_seen[
+            panel
+        ] = index
+
+    candidates = sorted(
+        counter.keys()
+    )
 
     raw = []
 
     for panel in candidates:
 
-        frequency = counter[panel]
+        frequency = counter[
+            panel
+        ]
 
-        recent_frequency = recent_counter[panel]
-
-        last_index = last_seen[panel]
-
-        gap = total - 1 - last_index
-
-        # Recency decay.
-        decay = math.exp(-gap / max(25.0, total * 0.08))
-
-        # Momentum.
-        momentum = recent_frequency / max(
-            1,
-            frequency
+        recent_frequency = (
+            recent_counter[
+                panel
+            ]
         )
 
-        # Digit balance / concentration.
-        digits = [int(x) for x in panel]
+        last_index = last_seen[
+            panel
+        ]
 
-        mean_digit = statistics.mean(digits)
+        gap = (
+            total -
+            1 -
+            last_index
+        )
+
+        decay = math.exp(
+            -gap /
+            max(
+                25.0,
+                total * 0.08
+            )
+        )
+
+        momentum = (
+            recent_frequency /
+            max(
+                1,
+                frequency
+            )
+        )
+
+        digits = [
+            int(x)
+            for x in panel
+        ]
+
+        mean_digit = statistics.mean(
+            digits
+        )
 
         try:
-            digit_variance = statistics.pvariance(digits)
+
+            digit_variance = (
+                statistics.pvariance(
+                    digits
+                )
+            )
+
         except statistics.StatisticsError:
+
             digit_variance = 0.0
 
-        digit_stability = 1.0 / (1.0 + digit_variance)
+        digit_stability = (
+            1.0 /
+            (
+                1.0 +
+                digit_variance
+            )
+        )
 
         raw.append({
             "panel": panel,
@@ -418,13 +489,18 @@ def analyze_panels(panels):
             "gap": gap,
             "recency": decay,
             "momentum": momentum,
-            "digit_stability": digit_stability,
-            "mean_digit": mean_digit,
+            "digit_stability":
+                digit_stability,
+            "mean_digit":
+                mean_digit,
         })
 
-    # Normalize each feature.
     def values(key):
-        return [float(x[key]) for x in raw]
+
+        return [
+            float(x[key])
+            for x in raw
+        ]
 
     feature_names = [
         "frequency",
@@ -437,24 +513,34 @@ def analyze_panels(panels):
     normalized = {}
 
     for key in feature_names:
-        vals = values(key)
+
+        vals = values(
+            key
+        )
 
         lo = min(vals)
         hi = max(vals)
 
-        for i, item in enumerate(raw):
+        for i, item in enumerate(
+            raw
+        ):
+
             if hi == lo:
-                normalized[(i, key)] = 0.5
+
+                normalized[
+                    (i, key)
+                ] = 0.5
+
             else:
-                normalized[(i, key)] = (
-                    (item[key] - lo) /
+
+                normalized[
+                    (i, key)
+                ] = (
+                    (item[key] - lo)
+                    /
                     (hi - lo)
                 )
 
-    # Composite score.
-    #
-    # We intentionally avoid pretending these weights
-    # produce a probability of a future result.
     weights = {
         "frequency": 0.30,
         "recent_frequency": 0.20,
@@ -465,16 +551,24 @@ def analyze_panels(panels):
 
     ranking = []
 
-    for i, item in enumerate(raw):
+    for i, item in enumerate(
+        raw
+    ):
 
         score = sum(
-            normalized[(i, key)] * weight
-            for key, weight in weights.items()
+            normalized[
+                (i, key)
+            ] * weight
+            for key, weight
+            in weights.items()
         )
 
         ranking.append({
             **item,
-            "score": round(score * 100, 2),
+            "score": round(
+                score * 100,
+                2
+            ),
         })
 
     ranking.sort(
@@ -485,34 +579,51 @@ def analyze_panels(panels):
         )
     )
 
-    # Digit frequency.
     digit_counter = Counter()
 
     for panel in panels:
+
         for digit in panel:
-            digit_counter[digit] += 1
+
+            digit_counter[
+                digit
+            ] += 1
 
     digit_frequency = [
         {
             "digit": digit,
-            "count": digit_counter[digit],
+            "count":
+                digit_counter[digit],
         }
-        for digit in sorted(digit_counter)
+        for digit
+        in sorted(
+            digit_counter
+        )
     ]
 
     return {
         "records": total,
         "unique": len(counter),
-        "ranking": ranking[:10],
+
+        "ranking":
+            ranking[:10],
+
         "top_panels": [
             {
                 "value": x["panel"],
-                "count": x["frequency"],
+                "count":
+                    x["frequency"],
             }
             for x in ranking[:20]
         ],
-        "digit_frequency": digit_frequency,
-        "backtest": simple_backtest(panels),
+
+        "digit_frequency":
+            digit_frequency,
+
+        "backtest":
+            simple_backtest(
+                panels
+            ),
     }
 
 
@@ -520,42 +631,50 @@ def analyze_panels(panels):
 # WALK-FORWARD BACKTEST
 # ============================================================
 
-def simple_backtest(panels):
-    """
-    Very conservative historical sanity check.
-
-    At each step:
-      1. train on observations before the next observation
-      2. rank panels
-      3. check whether the next observed panel appears
-         in the Top-10
-
-    This is NOT proof of future predictive ability.
-    """
+def simple_backtest(
+    panels
+):
 
     if len(panels) < 30:
+
         return {
             "available": False,
-            "message": "Need at least 30 historical observations.",
+            "message":
+                "Need at least 30 historical observations.",
         }
 
     hits = 0
     trials = 0
 
-    start = max(20, len(panels) - 250)
+    start = max(
+        20,
+        len(panels) - 250
+    )
 
-    for i in range(start, len(panels)):
+    for i in range(
+        start,
+        len(panels)
+    ):
 
         train = panels[:i]
 
-        if len(set(train)) < 10:
+        if len(
+            set(train)
+        ) < 10:
+
             continue
 
-        result = analyze_panels_without_backtest(train)
+        result = (
+            analyze_panels_without_backtest(
+                train
+            )
+        )
 
         top10 = {
             x["panel"]
-            for x in result["ranking"][:10]
+            for x in result[
+                "ranking"
+            ][:10]
         }
 
         actual = panels[i]
@@ -572,72 +691,132 @@ def simple_backtest(panels):
     )
 
     return {
-        "available": trials > 0,
-        "trials": trials,
-        "top10_hits": hits,
-        "hit_rate": round(rate * 100, 2),
-        "warning": (
-            "Historical backtest only; not a guarantee "
-            "of future outcomes."
-        ),
+        "available":
+            trials > 0,
+
+        "trials":
+            trials,
+
+        "top10_hits":
+            hits,
+
+        "hit_rate":
+            round(
+                rate * 100,
+                2
+            ),
+
+        "warning":
+            "Historical backtest only; "
+            "not a guarantee of future outcomes.",
     }
 
 
-def analyze_panels_without_backtest(panels):
-    """
-    Same ranking calculation without recursively running
-    the backtest.
-    """
+def analyze_panels_without_backtest(
+    panels
+):
 
     if not panels:
+
         return {
             "ranking": []
         }
 
-    counter = Counter(panels)
-    total = len(panels)
+    counter = Counter(
+        panels
+    )
 
-    recent = panels[-min(100, total):]
-    recent_counter = Counter(recent)
+    total = len(
+        panels
+    )
+
+    recent = panels[
+        -min(100, total):
+    ]
+
+    recent_counter = Counter(
+        recent
+    )
 
     last_seen = {}
 
-    for index, panel in enumerate(panels):
-        last_seen[panel] = index
+    for index, panel in enumerate(
+        panels
+    ):
+
+        last_seen[
+            panel
+        ] = index
 
     raw = []
 
     for panel in counter:
 
-        frequency = counter[panel]
+        frequency = counter[
+            panel
+        ]
 
-        recent_frequency = recent_counter[panel]
+        recent_frequency = (
+            recent_counter[
+                panel
+            ]
+        )
 
-        gap = total - 1 - last_seen[panel]
+        gap = (
+            total -
+            1 -
+            last_seen[
+                panel
+            ]
+        )
 
         recency = math.exp(
-            -gap / max(25.0, total * 0.08)
+            -gap /
+            max(
+                25.0,
+                total * 0.08
+            )
         )
 
         momentum = (
             recent_frequency /
-            max(1, frequency)
+            max(
+                1,
+                frequency
+            )
         )
 
-        digits = [int(x) for x in panel]
+        digits = [
+            int(x)
+            for x in panel
+        ]
 
-        variance = statistics.pvariance(digits)
+        variance = (
+            statistics.pvariance(
+                digits
+            )
+        )
 
-        stability = 1 / (1 + variance)
+        stability = (
+            1 /
+            (
+                1 +
+                variance
+            )
+        )
 
         raw.append({
             "panel": panel,
             "frequency": frequency,
-            "recent_frequency": recent_frequency,
+            "recent_frequency":
+                recent_frequency,
             "gap": gap,
-            "recency": recency,
-            "momentum": momentum,
-            "digit_stability": stability,
+            "recency":
+                recency,
+            "momentum":
+                momentum,
+            "digit_stability":
+                stability,
         })
 
     features = [
@@ -652,17 +831,28 @@ def analyze_panels_without_backtest(panels):
 
     for key in features:
 
-        vals = [x[key] for x in raw]
+        vals = [
+            x[key]
+            for x in raw
+        ]
 
         lo = min(vals)
         hi = max(vals)
 
-        for i, value in enumerate(vals):
+        for i, value in enumerate(
+            vals
+        ):
 
-            normalized[(i, key)] = (
+            normalized[
+                (i, key)
+            ] = (
                 0.5
                 if hi == lo
-                else (value - lo) / (hi - lo)
+                else (
+                    (value - lo)
+                    /
+                    (hi - lo)
+                )
             )
 
     weights = {
@@ -675,16 +865,22 @@ def analyze_panels_without_backtest(panels):
 
     ranking = []
 
-    for i, item in enumerate(raw):
+    for i, item in enumerate(
+        raw
+    ):
 
         score = sum(
-            normalized[(i, key)] * weights[key]
+            normalized[
+                (i, key)
+            ] *
+            weights[key]
             for key in features
         )
 
         ranking.append({
             **item,
-            "score": score * 100,
+            "score":
+                score * 100,
         })
 
     ranking.sort(
@@ -696,7 +892,8 @@ def analyze_panels_without_backtest(panels):
     )
 
     return {
-        "ranking": ranking
+        "ranking":
+            ranking
     }
 
 
@@ -706,43 +903,66 @@ def analyze_panels_without_backtest(panels):
 
 @app.get("/api/markets")
 def markets():
+
     return jsonify([
         {
             "id": key,
             "name": value["name"],
         }
-        for key, value in MARKETS.items()
+        for key, value
+        in MARKETS.items()
     ])
 
 
 @app.post("/api/sync")
 def sync():
+
     try:
-        payload = request.get_json(silent=True) or {}
+
+        payload = (
+            request.get_json(
+                silent=True
+            )
+            or {}
+        )
 
         market = str(
-            payload.get("market", "")
+            payload.get(
+                "market",
+                ""
+            )
         ).strip().lower()
 
         if market not in MARKETS:
+
             return jsonify({
                 "ok": False,
-                "error": "Select Kalyan or Main Bazar."
+                "error":
+                    "Select Kalyan or Main Bazar."
             }), 400
 
-        source = MARKETS[market]["url"]
+        source = MARKETS[
+            market
+        ]["url"]
 
-        html = fetch_source(source)
+        html = fetch_source(
+            source
+        )
 
-        panels, rows_found = parse_panels(html)
+        panels, rows_found = (
+            parse_panels(
+                html
+            )
+        )
 
         if not panels:
+
             return jsonify({
                 "ok": False,
-                "error": (
-                    "The source page was reached, but no "
-                    "3-digit panel records were detected."
-                )
+                "error":
+                    "The source page was reached, "
+                    "but no 3-digit panel records "
+                    "were detected."
             }), 502
 
         inserted = save_panels(
@@ -751,36 +971,61 @@ def sync():
             source,
         )
 
-        analysis = analyze_panels(panels)
+        analysis = analyze_panels(
+            panels
+        )
 
         return jsonify({
+
             "ok": True,
-            "market": MARKETS[market]["name"],
-            "source": source,
-            "rows_found": rows_found,
-            "fetched_panels": len(panels),
-            "new_records": inserted,
-            "analysis": analysis,
+
+            "market":
+                MARKETS[
+                    market
+                ]["name"],
+
+            "source":
+                source,
+
+            "rows_found":
+                rows_found,
+
+            "fetched_panels":
+                len(panels),
+
+            "new_records":
+                inserted,
+
+            "analysis":
+                analysis,
         })
 
     except requests.Timeout:
+
         return jsonify({
             "ok": False,
-            "error": "Source request timed out. Try again."
+            "error":
+                "Source request timed out. Try again."
         }), 504
 
     except requests.RequestException as exc:
+
         return jsonify({
             "ok": False,
-            "error": f"Source request failed: {exc}"
+            "error":
+                f"Source request failed: {exc}"
         }), 502
 
     except Exception as exc:
-        app.logger.exception("SYNC ERROR")
+
+        app.logger.exception(
+            "SYNC ERROR"
+        )
 
         return jsonify({
             "ok": False,
-            "error": str(exc)
+            "error":
+                str(exc)
         }), 500
 
 
@@ -814,7 +1059,9 @@ HTML = r"""
 <html lang="en">
 
 <head>
+
 <meta charset="utf-8">
+
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
 
@@ -977,6 +1224,7 @@ th{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -1157,6 +1405,7 @@ function showError(message){
     document.getElementById(
       "success"
     ).style.display = "none";
+
 }
 
 
@@ -1174,6 +1423,7 @@ function showSuccess(message){
     document.getElementById(
       "error"
     ).style.display = "none";
+
 }
 
 
@@ -1321,6 +1571,7 @@ function renderRanking(rows){
       rows.map(
         (x,i) => `
         <tr>
+
           <td class="rank">
             ${i + 1}
           </td>
@@ -1340,6 +1591,7 @@ function renderRanking(rows){
           <td>
             ${Number(x.score).toFixed(2)}
           </td>
+
         </tr>
         `
       ).join("");
@@ -1355,6 +1607,7 @@ function renderDigits(rows){
       rows.map(
         x => `
         <tr>
+
           <td>
             ${escapeHtml(x.digit)}
           </td>
@@ -1362,6 +1615,7 @@ function renderDigits(rows){
           <td>
             ${x.count}
           </td>
+
         </tr>
         `
       ).join("");
@@ -1372,10 +1626,14 @@ function renderDigits(rows){
 function renderChart(rows){
 
     const labels =
-      rows.map(x => x.value);
+      rows.map(
+        x => x.value
+      );
 
     const values =
-      rows.map(x => x.count);
+      rows.map(
+        x => x.count
+      );
 
     if(chart){
 
@@ -1483,13 +1741,17 @@ function renderBacktest(result){
 
       Historical hit rate:
       <strong>
-        ${Number(result.hit_rate).toFixed(2)}%
+        ${Number(
+          result.hit_rate
+        ).toFixed(2)}%
       </strong>
 
       <br><br>
 
       <span class="warning">
-        ${escapeHtml(result.warning)}
+        ${escapeHtml(
+          result.warning
+        )}
       </span>
     `;
 
@@ -1499,11 +1761,26 @@ function renderBacktest(result){
 function escapeHtml(value){
 
     return String(value)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
 
 }
 
@@ -1541,13 +1818,17 @@ loadDatabase();
 </script>
 
 </body>
+
 </html>
 """
 
 
 @app.get("/")
 def home():
-    return render_template_string(HTML)
+
+    return render_template_string(
+        HTML
+    )
 
 
 # ============================================================
@@ -1557,6 +1838,7 @@ def home():
 init_db()
 
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=5000,

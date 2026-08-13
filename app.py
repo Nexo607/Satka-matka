@@ -1,18 +1,16 @@
 from __future__ import annotations
 
+import math
 import re
 import sqlite3
+import statistics
+from collections import Counter
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any
 from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, render_template_string, request
-
-import analytics
-import adaptive_engine
 
 
 # ============================================================
@@ -21,13 +19,7 @@ import adaptive_engine
 
 app = Flask(__name__)
 
-BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "nexo.db"
-
-
-# ============================================================
-# CONFIGURATION
-# ============================================================
+DATABASE = "nexo.db"
 
 MARKETS = {
     "kalyan": {
@@ -43,11 +35,13 @@ MARKETS = {
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
-        "AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1"
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+        "Version/17.0 Mobile/15E148 Safari/604.1"
     ),
-    "Accept": (
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    ),
+    "Accept": "text/html,application/xhtml+xml,"
+              "application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Cache-Control": "no-cache",
 }
 
 
@@ -56,7 +50,7 @@ HEADERS = {
 # ============================================================
 
 def db():
-    conn = sqlite3.connect(str(DATABASE))
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -65,12 +59,9 @@ def init_db():
     conn = db()
 
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS observations (
+        CREATE TABLE IF NOT EXISTS panel_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             market TEXT NOT NULL,
-            result_date TEXT,
-            update_time TEXT,
-            sequence INTEGER DEFAULT 1,
             panel TEXT NOT NULL,
             source TEXT NOT NULL,
             fetched_at TEXT NOT NULL
@@ -78,13 +69,13 @@ def init_db():
     """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_observations_market
-        ON observations(market)
+        CREATE INDEX IF NOT EXISTS idx_panel_history_market
+        ON panel_history(market)
     """)
 
     conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_observations_date
-        ON observations(market, result_date, update_time)
+        CREATE INDEX IF NOT EXISTS idx_panel_history_panel
+        ON panel_history(panel)
     """)
 
     conn.execute("""
@@ -94,7 +85,6 @@ def init_db():
             source TEXT NOT NULL,
             rows_found INTEGER NOT NULL,
             panels_found INTEGER NOT NULL,
-            inserted INTEGER NOT NULL,
             synced_at TEXT NOT NULL
         )
     """)
@@ -104,7 +94,21 @@ def init_db():
 
 
 # ============================================================
-# SOURCE VALIDATION
+# ERROR HANDLING
+# ============================================================
+
+@app.errorhandler(Exception)
+def handle_exception(exc):
+    app.logger.exception("UNHANDLED ERROR")
+
+    return jsonify({
+        "ok": False,
+        "error": f"{type(exc).__name__}: {str(exc)}"
+    }), 500
+
+
+# ============================================================
+# URL VALIDATION
 # ============================================================
 
 def valid_source(url: str) -> bool:
@@ -114,45 +118,66 @@ def valid_source(url: str) -> bool:
     }
 
 
-def fetch_source(url: str) -> str:
+def validate_source(url: str):
+    if not isinstance(url, str):
+        raise ValueError("Source URL is not a string.")
+
+    url = url.strip()
+
+    if not url:
+        raise ValueError("Source URL is empty.")
 
     if not valid_source(url):
-        raise ValueError(
-            "Unknown historical source."
-        )
+        raise ValueError("Unknown historical source.")
 
     parsed = urlparse(url)
 
     if parsed.scheme != "https":
-        raise ValueError(
-            "Source must use HTTPS."
-        )
+        raise ValueError("Historical source must use HTTPS.")
+
+    if not parsed.netloc:
+        raise ValueError("Historical source URL is invalid.")
+
+    return url
+
+
+# ============================================================
+# SOURCE FETCHING
+# ============================================================
+
+def fetch_source(url: str) -> str:
+
+    url = validate_source(url)
 
     response = requests.get(
         url,
         headers=HEADERS,
-        timeout=25,
+        timeout=(10, 30),
+        allow_redirects=True,
     )
 
     response.raise_for_status()
 
-    if not response.text:
+    if not response.text.strip():
         raise ValueError(
-            "Source returned an empty page."
+            "Historical source returned an empty response."
         )
 
     return response.text
 
 
 # ============================================================
-# VALUE PARSING
+# PANEL PARSING
 # ============================================================
 
-def normalize_panel(value: str) -> str | None:
+def normalize_panel(value):
+
+    if value is None:
+        return None
 
     digits = re.findall(
         r"\d",
-        value
+        str(value)
     )
 
     if len(digits) != 3:
@@ -161,9 +186,7 @@ def normalize_panel(value: str) -> str | None:
     return "".join(digits)
 
 
-def extract_panels_from_cell(
-    cell
-) -> list[str]:
+def extract_panels_from_cell(cell):
 
     text = cell.get_text(
         " ",
@@ -176,8 +199,11 @@ def extract_panels_from_cell(
     if "*" in text:
         return []
 
-    result = []
+    found = []
 
+    # Example:
+    # 7 8 0
+    # 7 8 0 1 2 3
     matches = re.findall(
         r"(?<!\d)(\d)\s+(\d)\s+(\d)(?!\d)",
         text
@@ -187,10 +213,13 @@ def extract_panels_from_cell(
 
         panel = f"{a}{b}{c}"
 
-        if len(panel) == 3:
-            result.append(panel)
+        if re.fullmatch(
+            r"\d{3}",
+            panel
+        ):
+            found.append(panel)
 
-    if not matches:
+    if not found:
 
         compact = re.sub(
             r"\s+",
@@ -198,140 +227,30 @@ def extract_panels_from_cell(
             text
         )
 
-        match = re.fullmatch(
+        if re.fullmatch(
             r"\d{3}",
             compact
-        )
+        ):
+            found.append(compact)
 
-        if match:
-            result.append(compact)
-
-    return result
+    return found
 
 
-# ============================================================
-# DATE / TIME EXTRACTION
-# ============================================================
-
-DATE_PATTERNS = [
-    r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b",
-    r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b",
-]
-
-TIME_PATTERN = r"\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|am|pm)?\b"
-
-
-def extract_date(text: str) -> str:
-
-    for pattern in DATE_PATTERNS:
-
-        match = re.search(
-            pattern,
-            text
-        )
-
-        if match:
-            return match.group(0)
-
-    return ""
-
-
-def extract_time(text: str) -> str:
-
-    match = re.search(
-        TIME_PATTERN,
-        text
-    )
-
-    if not match:
-        return ""
-
-    return match.group(0)
-
-
-def normalize_date(value: str) -> str:
-
-    value = value.strip()
-
-    if not value:
-        return ""
-
-    formats = [
-        "%d/%m/%Y",
-        "%d-%m-%Y",
-        "%d/%m/%y",
-        "%d-%m-%y",
-        "%Y/%m/%d",
-        "%Y-%m-%d",
-    ]
-
-    for fmt in formats:
-
-        try:
-
-            return datetime.strptime(
-                value,
-                fmt
-            ).strftime(
-                "%Y-%m-%d"
-            )
-
-        except ValueError:
-            pass
-
-    return value
-
-
-def normalize_time(value: str) -> str:
-
-    value = value.strip()
-
-    if not value:
-        return ""
-
-    formats = [
-        "%H:%M",
-        "%H:%M:%S",
-        "%I:%M %p",
-        "%I:%M:%S %p",
-    ]
-
-    for fmt in formats:
-
-        try:
-
-            return datetime.strptime(
-                value,
-                fmt
-            ).strftime(
-                "%H:%M"
-            )
-
-        except ValueError:
-            pass
-
-    return value
-
-
-# ============================================================
-# HISTORICAL HTML PARSER
-# ============================================================
-
-def parse_observations(
-    html: str
-) -> tuple[list[dict[str, Any]], int]:
+def parse_panels(html):
 
     soup = BeautifulSoup(
         html,
         "html.parser"
     )
 
-    observations = []
+    panels = []
     rows_found = 0
 
-    for table in soup.find_all("table"):
+    # --------------------------------------------------------
+    # TABLE PARSER
+    # --------------------------------------------------------
 
-        sequence = 0
+    for table in soup.find_all("table"):
 
         for tr in table.find_all("tr"):
 
@@ -347,85 +266,49 @@ def parse_observations(
                 strip=True
             )
 
-            if not row_text:
-                continue
-
             lower = row_text.lower()
 
             if (
                 "date" in lower
-                and (
-                    "mon" in lower
-                    or "monday" in lower
-                )
+                and "mon" in lower
             ):
                 continue
 
-            result_date = normalize_date(
-                extract_date(row_text)
-            )
+            row_panels = []
 
-            update_time = normalize_time(
-                extract_time(row_text)
-            )
+            for cell in cells:
 
-            found = []
-
-            # First cell normally contains date.
-            # Remaining cells contain results.
-            data_cells = cells[1:] if len(cells) > 1 else cells
-
-            for cell in data_cells:
-
-                found.extend(
+                row_panels.extend(
                     extract_panels_from_cell(
                         cell
                     )
                 )
 
-            if not found:
-                continue
+            if row_panels:
 
-            rows_found += 1
+                rows_found += 1
 
-            for panel in found:
-
-                sequence += 1
-
-                observations.append({
-                    "result_date":
-                        result_date,
-
-                    "update_time":
-                        update_time,
-
-                    "sequence":
-                        sequence,
-
-                    "value":
-                        panel,
-                })
+                panels.extend(
+                    row_panels
+                )
 
     # --------------------------------------------------------
-    # FALLBACK
+    # FALLBACK TEXT PARSER
     # --------------------------------------------------------
 
-    if not observations:
+    if not panels:
 
         text = soup.get_text(
             "\n",
             strip=True
         )
 
-        lines = [
-            line.strip()
-            for line in text.splitlines()
-            if line.strip()
-        ]
+        for line in text.splitlines():
 
-        sequence = 0
+            line = line.strip()
 
-        for line in lines:
+            if not line:
+                continue
 
             compact = re.sub(
                 r"\s+",
@@ -438,67 +321,39 @@ def parse_observations(
                 compact
             ):
 
-                sequence += 1
+                panels.append(
+                    compact
+                )
 
-                observations.append({
-                    "result_date": "",
-                    "update_time": "",
-                    "sequence": sequence,
-                    "value": compact,
-                })
+    # --------------------------------------------------------
+    # CLEAN
+    # --------------------------------------------------------
 
-    return observations, rows_found
+    cleaned = []
+
+    for panel in panels:
+
+        normalized = normalize_panel(
+            panel
+        )
+
+        if normalized:
+            cleaned.append(
+                normalized
+            )
+
+    return cleaned, rows_found
 
 
 # ============================================================
-# DATABASE INSERT
+# DATABASE STORAGE
 # ============================================================
 
-def observation_exists(
-    conn,
-    market: str,
-    observation: dict[str, Any]
-) -> bool:
-
-    row = conn.execute(
-        """
-        SELECT 1
-        FROM observations
-        WHERE market = ?
-          AND panel = ?
-          AND COALESCE(result_date, '') = ?
-          AND COALESCE(update_time, '') = ?
-          AND sequence = ?
-        LIMIT 1
-        """,
-        (
-            market,
-            observation["value"],
-            observation.get(
-                "result_date",
-                ""
-            ),
-            observation.get(
-                "update_time",
-                ""
-            ),
-            int(
-                observation.get(
-                    "sequence",
-                    1
-                ) or 1
-            ),
-        ),
-    ).fetchone()
-
-    return row is not None
-
-
-def save_observations(
-    market: str,
-    observations: list[dict[str, Any]],
-    source: str
-) -> int:
+def save_panels(
+    market,
+    panels,
+    source
+):
 
     now = datetime.now(
         timezone.utc
@@ -508,81 +363,38 @@ def save_observations(
 
     inserted = 0
 
-    for observation in observations:
+    for panel in panels:
 
-        try:
-
-            if observation_exists(
-                conn,
+        conn.execute(
+            """
+            INSERT INTO panel_history
+            (market, panel, source, fetched_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
                 market,
-                observation
-            ):
-                continue
-
-            conn.execute(
-                """
-                INSERT INTO observations
-                (
-                    market,
-                    result_date,
-                    update_time,
-                    sequence,
-                    panel,
-                    source,
-                    fetched_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    market,
-                    observation.get(
-                        "result_date",
-                        ""
-                    ),
-                    observation.get(
-                        "update_time",
-                        ""
-                    ),
-                    int(
-                        observation.get(
-                            "sequence",
-                            1
-                        ) or 1
-                    ),
-                    observation["value"],
-                    source,
-                    now,
-                ),
+                panel,
+                source,
+                now,
             )
+        )
 
-            inserted += 1
-
-        except sqlite3.Error:
-            continue
-
-    conn.commit()
+        inserted += 1
 
     conn.execute(
         """
         INSERT INTO sync_log
-        (
-            market,
-            source,
-            rows_found,
-            panels_found,
-            inserted,
-            synced_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
+        (market, source, rows_found,
+         panels_found, synced_at)
+        VALUES (?, ?, ?, ?, ?)
         """,
         (
             market,
             source,
-            0,
-            len(observations),
+            len(panels),
             inserted,
             now,
-        ),
+        )
     )
 
     conn.commit()
@@ -591,268 +403,734 @@ def save_observations(
     return inserted
 
 
-# ============================================================
-# LOAD COMPLETE MARKET HISTORY
-# ============================================================
-
-def load_market_records(
-    market: str
-) -> list[dict[str, Any]]:
+def get_database_panels(market):
 
     conn = db()
 
     rows = conn.execute(
         """
-        SELECT
-            id,
-            market,
-            result_date,
-            update_time,
-            sequence,
-            panel
-        FROM observations
+        SELECT panel
+        FROM panel_history
         WHERE market = ?
-        ORDER BY
-            COALESCE(result_date, ''),
-            COALESCE(update_time, ''),
-            sequence,
-            id
+        ORDER BY id ASC
         """,
-        (market,),
+        (market,)
     ).fetchall()
 
     conn.close()
 
-    records = []
-
-    for row in rows:
-
-        records.append({
-            "id":
-                row["id"],
-
-            "value":
-                row["panel"],
-
-            "result_date":
-                row["result_date"] or "",
-
-            "update_time":
-                row["update_time"] or "",
-
-            "sequence":
-                row["sequence"] or 1,
-        })
-
-    return records
+    return [
+        row["panel"]
+        for row in rows
+    ]
 
 
 # ============================================================
-# COMPATIBILITY: LEGACY DATABASE
+# NORMALIZATION
 # ============================================================
 
-def migrate_legacy_database():
+def normalize_values(values):
 
-    conn = db()
+    if not values:
+        return []
 
-    tables = {
-        row["name"]
-        for row in conn.execute(
-            """
-            SELECT name
-            FROM sqlite_master
-            WHERE type='table'
-            """
-        ).fetchall()
-    }
+    lo = min(values)
+    hi = max(values)
 
-    # Nothing to migrate.
-    if "panels" not in tables:
-        conn.close()
-        return
+    if hi == lo:
+        return [
+            0.5
+            for _ in values
+        ]
 
-    # New table already exists. Keep legacy table untouched.
-    # We intentionally do not copy legacy rows because the old
-    # schema lost dates/times and incorrectly deduplicated panels.
-    conn.close()
+    return [
+        (value - lo) /
+        (hi - lo)
+        for value in values
+    ]
 
 
 # ============================================================
-# V6 ANALYSIS
+# STATISTICAL ENGINE
 # ============================================================
 
-def run_v6_analysis(
-    market: str,
-    records: list[dict],
-    recent_window: int = 20
-) -> dict[str, Any]:
+def analyze_panels(panels):
 
-    if not records:
+    if not panels:
 
         return {
-            "observations": 0,
+            "records": 0,
+            "unique": 0,
             "ranking": [],
-            "time_slots": {},
-            "position_distribution": {},
-            "stability": {},
-            "sequence": [],
-            "adaptive": None,
+            "top_panels": [],
+            "digit_frequency": [],
+            "backtest": {
+                "available": False,
+                "message":
+                    "No historical observations available."
+            }
         }
 
-    analysis_result = analytics.analyze_market(
-        records,
-        recent_window=recent_window
+    counter = Counter(
+        panels
     )
 
-    adaptive_result = adaptive_engine.auto_update(
-        market=market,
-        records=records,
-        minimum_new_records=5,
-        min_history=10,
-        top_n=10,
-        recent_window=recent_window,
-        trials=60,
+    total = len(
+        panels
     )
 
-    analysis_result["adaptive"] = (
-        adaptive_result
+    recent_window = min(
+        100,
+        total
     )
 
-    return analysis_result
+    recent = panels[
+        -recent_window:
+    ]
+
+    recent_counter = Counter(
+        recent
+    )
+
+    last_seen = {}
+
+    for index, panel in enumerate(
+        panels
+    ):
+        last_seen[
+            panel
+        ] = index
+
+    raw = []
+
+    for panel in counter:
+
+        frequency = counter[
+            panel
+        ]
+
+        recent_frequency = (
+            recent_counter[
+                panel
+            ]
+        )
+
+        gap = (
+            total
+            - 1
+            - last_seen[
+                panel
+            ]
+        )
+
+        recency = math.exp(
+            -gap /
+            max(
+                25.0,
+                total * 0.08
+            )
+        )
+
+        momentum = (
+            recent_frequency /
+            max(
+                1,
+                frequency
+            )
+        )
+
+        digits = [
+            int(d)
+            for d in panel
+        ]
+
+        digit_variance = (
+            statistics.pvariance(
+                digits
+            )
+            if len(digits) > 1
+            else 0.0
+        )
+
+        digit_stability = (
+            1.0 /
+            (
+                1.0 +
+                digit_variance
+            )
+        )
+
+        raw.append({
+            "panel": panel,
+            "frequency": frequency,
+            "recent_frequency":
+                recent_frequency,
+            "gap": gap,
+            "recency": recency,
+            "momentum": momentum,
+            "digit_stability":
+                digit_stability,
+        })
+
+    feature_names = [
+        "frequency",
+        "recent_frequency",
+        "recency",
+        "momentum",
+        "digit_stability",
+    ]
+
+    normalized = {}
+
+    for feature in feature_names:
+
+        values = [
+            float(item[feature])
+            for item in raw
+        ]
+
+        norm = normalize_values(
+            values
+        )
+
+        for index, value in enumerate(
+            norm
+        ):
+            normalized[
+                (index, feature)
+            ] = value
+
+    weights = {
+        "frequency": 0.30,
+        "recent_frequency": 0.20,
+        "recency": 0.15,
+        "momentum": 0.15,
+        "digit_stability": 0.20,
+    }
+
+    ranking = []
+
+    for index, item in enumerate(
+        raw
+    ):
+
+        score = 0.0
+
+        for feature, weight in (
+            weights.items()
+        ):
+
+            score += (
+                normalized[
+                    (index, feature)
+                ]
+                * weight
+            )
+
+        ranking.append({
+            **item,
+            "score": round(
+                score * 100,
+                2
+            )
+        })
+
+    ranking.sort(
+        key=lambda item: (
+            -item["score"],
+            -item["frequency"],
+            item["gap"],
+            item["panel"],
+        )
+    )
+
+    # --------------------------------------------------------
+    # DIGIT FREQUENCY
+    # --------------------------------------------------------
+
+    digit_counter = Counter()
+
+    for panel in panels:
+
+        for digit in panel:
+            digit_counter[
+                digit
+            ] += 1
+
+    digit_frequency = [
+        {
+            "digit": digit,
+            "count":
+                digit_counter[digit]
+        }
+        for digit in sorted(
+            digit_counter
+        )
+    ]
+
+    return {
+        "records": total,
+        "unique": len(counter),
+
+        "ranking":
+            ranking[:10],
+
+        "top_panels": [
+            {
+                "value":
+                    item["panel"],
+                "count":
+                    item["frequency"],
+            }
+            for item in ranking[:20]
+        ],
+
+        "digit_frequency":
+            digit_frequency,
+
+        "backtest":
+            simple_backtest(
+                panels
+            ),
+    }
 
 
 # ============================================================
-# API: MARKETS
+# BACKTEST
 # ============================================================
+
+def analyze_panels_without_backtest(
+    panels
+):
+
+    if not panels:
+        return {
+            "ranking": []
+        }
+
+    counter = Counter(
+        panels
+    )
+
+    total = len(
+        panels
+    )
+
+    recent = panels[
+        -min(100, total):
+    ]
+
+    recent_counter = Counter(
+        recent
+    )
+
+    last_seen = {}
+
+    for index, panel in enumerate(
+        panels
+    ):
+        last_seen[
+            panel
+        ] = index
+
+    raw = []
+
+    for panel in counter:
+
+        frequency = counter[
+            panel
+        ]
+
+        recent_frequency = (
+            recent_counter[
+                panel
+            ]
+        )
+
+        gap = (
+            total
+            - 1
+            - last_seen[
+                panel
+            ]
+        )
+
+        recency = math.exp(
+            -gap /
+            max(
+                25.0,
+                total * 0.08
+            )
+        )
+
+        momentum = (
+            recent_frequency /
+            max(
+                1,
+                frequency
+            )
+        )
+
+        digits = [
+            int(d)
+            for d in panel
+        ]
+
+        variance = (
+            statistics.pvariance(
+                digits
+            )
+            if len(digits) > 1
+            else 0.0
+        )
+
+        stability = (
+            1.0 /
+            (
+                1.0 +
+                variance
+            )
+        )
+
+        raw.append({
+            "panel": panel,
+            "frequency": frequency,
+            "recent_frequency":
+                recent_frequency,
+            "gap": gap,
+            "recency": recency,
+            "momentum": momentum,
+            "digit_stability":
+                stability,
+        })
+
+    features = [
+        "frequency",
+        "recent_frequency",
+        "recency",
+        "momentum",
+        "digit_stability",
+    ]
+
+    normalized = {}
+
+    for feature in features:
+
+        values = [
+            float(item[feature])
+            for item in raw
+        ]
+
+        norm = normalize_values(
+            values
+        )
+
+        for index, value in enumerate(
+            norm
+        ):
+
+            normalized[
+                (index, feature)
+            ] = value
+
+    weights = {
+        "frequency": 0.30,
+        "recent_frequency": 0.20,
+        "recency": 0.15,
+        "momentum": 0.15,
+        "digit_stability": 0.20,
+    }
+
+    ranking = []
+
+    for index, item in enumerate(
+        raw
+    ):
+
+        score = sum(
+            normalized[
+                (index, feature)
+            ]
+            * weights[feature]
+            for feature in features
+        )
+
+        ranking.append({
+            **item,
+            "score":
+                score * 100
+        })
+
+    ranking.sort(
+        key=lambda item: (
+            -item["score"],
+            -item["frequency"],
+            item["gap"],
+            item["panel"],
+        )
+    )
+
+    return {
+        "ranking": ranking
+    }
+
+
+def simple_backtest(panels):
+
+    if len(panels) < 30:
+
+        return {
+            "available": False,
+            "message":
+                "Need at least 30 historical observations."
+        }
+
+    hits = 0
+    trials = 0
+
+    start = max(
+        20,
+        len(panels) - 250
+    )
+
+    for index in range(
+        start,
+        len(panels)
+    ):
+
+        train = panels[
+            :index
+        ]
+
+        if len(set(train)) < 10:
+            continue
+
+        result = (
+            analyze_panels_without_backtest(
+                train
+            )
+        )
+
+        top10 = {
+            item["panel"]
+            for item in result[
+                "ranking"
+            ][:10]
+        }
+
+        actual = panels[
+            index
+        ]
+
+        if actual in top10:
+            hits += 1
+
+        trials += 1
+
+    if trials == 0:
+
+        return {
+            "available": False,
+            "message":
+                "No valid walk-forward trials."
+        }
+
+    rate = (
+        hits /
+        trials
+    )
+
+    return {
+        "available": True,
+        "trials": trials,
+        "top10_hits": hits,
+        "hit_rate": round(
+            rate * 100,
+            2
+        ),
+        "warning":
+            "Historical backtest only; "
+            "not a guarantee of future outcomes."
+    }
+
+
+# ============================================================
+# API
+# ============================================================
+
+@app.get("/api/health")
+def health():
+
+    return jsonify({
+        "ok": True,
+        "service":
+            "NEXO Historical Analytics v6"
+    })
+
 
 @app.get("/api/markets")
 def markets():
 
     return jsonify([
         {
-            "id": key,
-            "name": value["name"],
+            "id": market_id,
+            "name": data["name"]
         }
-        for key, value in MARKETS.items()
+        for market_id, data
+        in MARKETS.items()
     ])
 
 
-# ============================================================
-# API: SYNC
-# ============================================================
+@app.get("/api/database")
+def database_stats():
+
+    conn = db()
+
+    total = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM panel_history
+        """
+    ).fetchone()[0]
+
+    unique = conn.execute(
+        """
+        SELECT COUNT(DISTINCT panel)
+        FROM panel_history
+        """
+    ).fetchone()[0]
+
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "records": total,
+        "unique": unique
+    })
+
 
 @app.post("/api/sync")
 def sync():
 
+    payload = (
+        request.get_json(
+            silent=True
+        )
+        or {}
+    )
+
+    market = str(
+        payload.get(
+            "market",
+            ""
+        )
+    ).strip().lower()
+
+    if market not in MARKETS:
+
+        return jsonify({
+            "ok": False,
+            "error":
+                "Select Kalyan or Main Bazar."
+        }), 400
+
+    source = MARKETS[
+        market
+    ]["url"]
+
     try:
 
-        payload = (
-            request.get_json(
-                silent=True
-            )
-            or {}
-        )
-
-        market = str(
-            payload.get(
-                "market",
-                ""
-            )
-        ).strip().lower()
-
-        if market not in MARKETS:
-
-            return jsonify({
-                "ok": False,
-                "error":
-                    "Select Kalyan or Main Bazar."
-            }), 400
-
-        source = MARKETS[
-            market
-        ]["url"]
+        # ----------------------------------------------------
+        # FETCH
+        # ----------------------------------------------------
 
         html = fetch_source(
             source
         )
 
-        observations, rows_found = (
-            parse_observations(
+        # ----------------------------------------------------
+        # PARSE
+        # ----------------------------------------------------
+
+        panels, rows_found = (
+            parse_panels(
                 html
             )
         )
 
-        if not observations:
+        if not panels:
 
             return jsonify({
                 "ok": False,
                 "error":
-                    "The source page was reached, "
-                    "but no historical panel records "
+                    "Source was reached, but "
+                    "no 3-digit panel records "
                     "were detected."
             }), 502
 
-        # Save complete observations.
-        inserted = save_observations(
+        # ----------------------------------------------------
+        # SAVE
+        # ----------------------------------------------------
+
+        new_records = save_panels(
             market,
-            observations,
-            source,
+            panels,
+            source
         )
 
-        # IMPORTANT:
-        # Analyze accumulated database history,
-        # not only the current HTTP response.
-        records = load_market_records(
-            market
+        # ----------------------------------------------------
+        # ANALYZE ACCUMULATED MARKET HISTORY
+        # ----------------------------------------------------
+
+        all_panels = (
+            get_database_panels(
+                market
+            )
         )
 
-        analysis_result = run_v6_analysis(
-            market,
-            records,
-            recent_window=20
+        analysis = analyze_panels(
+            all_panels
         )
 
-        return jsonify({
-
+        response = {
             "ok": True,
-
             "market":
                 MARKETS[
                     market
                 ]["name"],
-
-            "source":
-                source,
-
+            "source": source,
             "rows_found":
                 rows_found,
-
             "fetched_panels":
-                len(observations),
-
+                len(panels),
             "new_records":
-                inserted,
-
-            "total_historical_records":
-                len(records),
-
+                new_records,
+            "database_records":
+                len(all_panels),
             "analysis":
-                analysis_result,
-        })
+                analysis
+        }
+
+        return jsonify(response), 200
 
     except requests.Timeout:
 
         return jsonify({
             "ok": False,
             "error":
-                "Source request timed out. Try again."
+                "Source request timed out. "
+                "Try again."
         }), 504
 
-    except requests.RequestException as exc:
+    except requests.HTTPError as exc:
 
-        app.logger.exception(
-            "SOURCE REQUEST ERROR"
-        )
+        return jsonify({
+            "ok": False,
+            "error":
+                f"Source HTTP error: {exc}"
+        }), 502
+
+    except requests.RequestException as exc:
 
         return jsonify({
             "ok": False,
@@ -869,143 +1147,8 @@ def sync():
         return jsonify({
             "ok": False,
             "error":
-                str(exc)
+                f"{type(exc).__name__}: {str(exc)}"
         }), 500
-
-
-# ============================================================
-# API: DATABASE
-# ============================================================
-
-@app.get("/api/database")
-def database_stats():
-
-    conn = db()
-
-    total = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM observations
-        """
-    ).fetchone()[0]
-
-    unique = conn.execute(
-        """
-        SELECT COUNT(DISTINCT panel)
-        FROM observations
-        """
-    ).fetchone()[0]
-
-    markets_count = conn.execute(
-        """
-        SELECT COUNT(DISTINCT market)
-        FROM observations
-        """
-    ).fetchone()[0]
-
-    conn.close()
-
-    return jsonify({
-        "records": total,
-        "unique": unique,
-        "markets": markets_count,
-    })
-
-
-# ============================================================
-# API: MARKET HISTORY
-# ============================================================
-
-@app.get("/api/history/<market>")
-def history(market: str):
-
-    market = market.strip().lower()
-
-    if market not in MARKETS:
-
-        return jsonify({
-            "ok": False,
-            "error":
-                "Unknown market."
-        }), 400
-
-    records = load_market_records(
-        market
-    )
-
-    return jsonify({
-        "ok": True,
-        "market":
-            MARKETS[
-                market
-            ]["name"],
-        "records":
-            records,
-        "count":
-            len(records),
-    })
-
-
-# ============================================================
-# API: ANALYSIS
-# ============================================================
-
-@app.get("/api/analysis/<market>")
-def analysis_api(market: str):
-
-    market = market.strip().lower()
-
-    if market not in MARKETS:
-
-        return jsonify({
-            "ok": False,
-            "error":
-                "Unknown market."
-        }), 400
-
-    records = load_market_records(
-        market
-    )
-
-    result = run_v6_analysis(
-        market,
-        records,
-        recent_window=20
-    )
-
-    return jsonify({
-        "ok": True,
-        "market":
-            MARKETS[
-                market
-            ]["name"],
-        "analysis":
-            result,
-    })
-
-
-# ============================================================
-# API: ADAPTIVE MODEL STATUS
-# ============================================================
-
-@app.get("/api/model/<market>")
-def model_status(market: str):
-
-    market = market.strip().lower()
-
-    if market not in MARKETS:
-
-        return jsonify({
-            "ok": False,
-            "error":
-                "Unknown market."
-        }), 400
-
-    return jsonify(
-        adaptive_engine.get_model_status(
-            market
-        )
-    )
 
 
 # ============================================================
@@ -1014,7 +1157,6 @@ def model_status(market: str):
 
 HTML = r"""
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -1022,7 +1164,7 @@ HTML = r"""
 <meta charset="utf-8">
 
 <meta name="viewport"
-      content="width=device-width,initial-scale=1">
+content="width=device-width,initial-scale=1">
 
 <title>NEXO Historical Analytics v6</title>
 
@@ -1048,36 +1190,37 @@ HTML = r"""
 body{
     margin:0;
     background:
-      radial-gradient(
+    radial-gradient(
         circle at top,
         #0b1d2c,
         #05080d 60%
-      );
+    );
     color:#dffcff;
     font-family:
-      ui-monospace,
-      SFMono-Regular,
-      Menlo,
-      Monaco,
-      Consolas,
-      monospace;
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
 }
 
 header{
-    padding:22px;
+    padding:24px 20px;
     border-bottom:1px solid var(--line);
 }
 
 .brand{
     color:var(--cyan);
-    font-size:21px;
+    font-size:24px;
     font-weight:900;
     letter-spacing:.08em;
 }
 
 .status{
-    margin-top:10px;
+    margin-top:12px;
     color:var(--green);
+    line-height:1.6;
 }
 
 main{
@@ -1093,7 +1236,7 @@ main{
     padding:18px;
     margin-bottom:16px;
     box-shadow:
-      0 0 30px #00e5ff08;
+    0 0 30px #00e5ff08;
 }
 
 h2{
@@ -1130,30 +1273,6 @@ button:disabled{
     margin:10px 0;
 }
 
-.model-grid{
-    display:grid;
-    grid-template-columns:
-      repeat(2,minmax(0,1fr));
-    gap:10px;
-}
-
-.model-box{
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:12px;
-}
-
-.model-label{
-    color:var(--muted);
-    font-size:11px;
-}
-
-.model-value{
-    color:var(--green);
-    font-size:18px;
-    margin-top:5px;
-}
-
 .muted{
     color:var(--muted);
     line-height:1.7;
@@ -1166,6 +1285,8 @@ button:disabled{
     padding:15px;
     border-radius:10px;
     margin-top:12px;
+    white-space:pre-wrap;
+    word-break:break-word;
 }
 
 .success{
@@ -1175,6 +1296,10 @@ button:disabled{
     padding:15px;
     border-radius:10px;
     margin-top:12px;
+}
+
+.warning{
+    color:var(--yellow);
 }
 
 table{
@@ -1201,24 +1326,7 @@ th{
 .chart-wrap{
     position:relative;
     height:320px;
-}
-
-.warning{
-    color:var(--yellow);
-}
-
-@media(max-width:600px){
-
-    .model-grid{
-        grid-template-columns:1fr;
-    }
-
-    th,
-    td{
-        padding:8px 5px;
-        font-size:12px;
-    }
-
+    width:100%;
 }
 
 </style>
@@ -1257,19 +1365,22 @@ Main Bazar
 
 </select>
 
-<button id="fetchBtn"
-        onclick="syncData()">
+<button
+id="fetchBtn"
+onclick="syncData()">
 
 ⚡ FETCH PANEL HISTORY
 
 </button>
 
-<div id="success"
-     class="success">
+<div
+id="success"
+class="success">
 </div>
 
-<div id="error"
-     class="error">
+<div
+id="error"
+class="error">
 </div>
 
 </section>
@@ -1279,8 +1390,9 @@ Main Bazar
 
 <h2>📦 DATABASE</h2>
 
-<div id="records"
-     class="metric">
+<div
+id="records"
+class="metric">
 —
 </div>
 
@@ -1293,88 +1405,19 @@ Accumulated historical observations
 
 <section class="card">
 
-<h2>🧠 ADAPTIVE ENGINE v6</h2>
-
-<div class="model-grid">
-
-<div class="model-box">
-
-<div class="model-label">
-MODEL STATUS
-</div>
-
-<div id="modelStatus"
-     class="model-value">
-—
-</div>
-
-</div>
-
-<div class="model-box">
-
-<div class="model-label">
-TRAINING RUNS
-</div>
-
-<div id="trainingRuns"
-     class="model-value">
-—
-</div>
-
-</div>
-
-<div class="model-box">
-
-<div class="model-label">
-OBSERVATIONS USED
-</div>
-
-<div id="modelObservations"
-     class="model-value">
-—
-</div>
-
-</div>
-
-<div class="model-box">
-
-<div class="model-label">
-VALIDATED SCORE
-</div>
-
-<div id="validatedScore"
-     class="model-value">
-—
-</div>
-
-</div>
-
-</div>
-
-<br>
-
-<div class="muted">
-Weights are calibrated using historical
-walk-forward evaluation.
-</div>
-
-</section>
-
-
-<section class="card">
-
-<h2>🧠 NEXO V6 STATISTICAL RANKING</h2>
+<h2>🧠 NEXO STATISTICAL RANKING</h2>
 
 <div class="muted">
 
-Frequency + recent frequency +
-recency decay + momentum +
-gap + repetition.
+Frequency +
+recent frequency +
+recency decay +
+momentum +
+digit stability.
 
 <br><br>
 
-Historical/statistical analysis only.
-Scores do not guarantee future outcomes.
+Historical statistical analysis only.
 
 </div>
 
@@ -1442,8 +1485,9 @@ Scores do not guarantee future outcomes.
 
 <h2>🧪 WALK-FORWARD BACKTEST</h2>
 
-<div id="backtest"
-     class="muted">
+<div
+id="backtest"
+class="muted">
 
 No backtest loaded.
 
@@ -1459,614 +1503,585 @@ No backtest loaded.
 let chart = null;
 
 
+/* ==========================================================
+   SAFE ERROR DISPLAY
+   ========================================================== */
+
 function showError(message){
 
     const box =
-      document.getElementById("error");
+        document.getElementById("error");
 
     box.textContent =
-      "FETCH ERROR: " + message;
+        "FETCH ERROR: " +
+        String(message);
 
     box.style.display =
-      "block";
+        "block";
 
     document.getElementById(
-      "success"
+        "success"
     ).style.display = "none";
-
 }
 
 
 function showSuccess(message){
 
     const box =
-      document.getElementById("success");
+        document.getElementById("success");
 
     box.textContent =
-      message;
+        String(message);
 
     box.style.display =
-      "block";
+        "block";
 
     document.getElementById(
-      "error"
+        "error"
     ).style.display = "none";
-
 }
 
+
+/* ==========================================================
+   CLEAR
+   ========================================================== */
 
 function clearResults(){
 
     document.getElementById(
-      "ranking"
+        "ranking"
     ).innerHTML = "";
 
     document.getElementById(
-      "digits"
+        "digits"
     ).innerHTML = "";
 
     document.getElementById(
-      "backtest"
-    ).innerHTML =
-      "Loading...";
-
+        "backtest"
+    ).textContent =
+        "Loading...";
 }
 
+
+/* ==========================================================
+   ROBUST RESPONSE PARSER
+   ========================================================== */
+
+async function readJsonResponse(response){
+
+    const text =
+        await response.text();
+
+    if(!text){
+
+        throw new Error(
+            "Server returned an empty response. HTTP " +
+            response.status
+        );
+    }
+
+    try{
+
+        return JSON.parse(text);
+
+    }catch(parseError){
+
+        /*
+         Safari often reports:
+         "The string did not match the expected pattern."
+        when JSON parsing fails.
+
+        Show the actual server response instead.
+        */
+
+        const preview =
+            text
+            .replace(/\s+/g, " ")
+            .slice(0, 500);
+
+        throw new Error(
+            "Server returned invalid JSON. " +
+            "HTTP " +
+            response.status +
+            ". Response: " +
+            preview
+        );
+    }
+}
+
+
+/* ==========================================================
+   SYNC
+   ========================================================== */
 
 async function syncData(){
 
     const button =
-      document.getElementById(
-        "fetchBtn"
-      );
+        document.getElementById(
+            "fetchBtn"
+        );
 
     const market =
-      document.getElementById(
-        "market"
-      ).value;
+        document.getElementById(
+            "market"
+        ).value;
 
     button.disabled = true;
 
     button.textContent =
-      "⏳ FETCHING + ANALYZING...";
+        "⏳ FETCHING...";
 
     clearResults();
 
     try{
 
+        /*
+         Same-origin relative URL.
+         This avoids malformed absolute URLs.
+        */
+
+        const endpoint =
+            new URL(
+                "/api/sync",
+                window.location.origin
+            ).toString();
+
         const response =
-          await fetch(
-            "/api/sync",
-            {
-                method:"POST",
+            await fetch(
+                endpoint,
+                {
+                    method:"POST",
 
-                headers:{
-                    "Content-Type":
-                      "application/json"
-                },
+                    headers:{
+                        "Content-Type":
+                            "application/json",
+                        "Accept":
+                            "application/json"
+                    },
 
-                body:JSON.stringify({
-                    market:market
-                })
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if(!response.ok ||
-           !data.ok){
-
-            throw new Error(
-              data.error ||
-              "Unable to fetch history."
+                    body:JSON.stringify({
+                        market:market
+                    })
+                }
             );
 
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+        if(
+            !response.ok ||
+            !data.ok
+        ){
+
+            throw new Error(
+                data.error ||
+                "Server rejected the sync request."
+            );
         }
 
         document.getElementById(
-          "records"
+            "records"
         ).textContent =
-          data.total_historical_records;
+            data.database_records ??
+            data.analysis.records ??
+            0;
 
         showSuccess(
-          data.market +
-          " sync complete — " +
-          data.new_records +
-          " new observations added. Total: " +
-          data.total_historical_records
+            data.market +
+            " sync complete — " +
+            data.fetched_panels +
+            " panels fetched; " +
+            data.database_records +
+            " total observations stored."
         );
 
-        const analysis =
-          data.analysis;
-
         renderRanking(
-          analysis.ranking
+            data.analysis.ranking
         );
 
         renderDigits(
-          buildDigitRows(
-            analysis.position_distribution
-          )
+            data.analysis.digit_frequency
         );
 
         renderChart(
-          analysis.ranking
+            data.analysis.top_panels
         );
 
         renderBacktest(
-          analysis
-        );
-
-        renderAdaptive(
-          analysis.adaptive
+            data.analysis.backtest
         );
 
     }catch(error){
 
+        console.error(
+            "NEXO SYNC ERROR:",
+            error
+        );
+
         showError(
-          error.message
+            error &&
+            error.message
+                ? error.message
+                : String(error)
         );
 
         document.getElementById(
-          "backtest"
+            "backtest"
         ).textContent =
-          "No backtest available.";
+            "No backtest available.";
 
     }finally{
 
         button.disabled = false;
 
         button.textContent =
-          "⚡ FETCH PANEL HISTORY";
-
+            "⚡ FETCH PANEL HISTORY";
     }
-
 }
 
+
+/* ==========================================================
+   RANKING
+   ========================================================== */
 
 function renderRanking(rows){
 
     const tbody =
-      document.getElementById(
-        "ranking"
-      );
+        document.getElementById(
+            "ranking"
+        );
 
-    if(!rows ||
-       rows.length === 0){
+    if(
+        !Array.isArray(rows) ||
+        rows.length === 0
+    ){
 
         tbody.innerHTML =
-          `<tr>
-             <td colspan="5">
-               No historical panels found.
-             </td>
-           </tr>`;
+            `<tr>
+                <td colspan="5">
+                    No historical panels found.
+                </td>
+            </tr>`;
 
         return;
     }
 
     tbody.innerHTML =
-      rows.map(
-        (x,i) => `
-        <tr>
+        rows.map(
+            (x, i) => `
+            <tr>
 
-          <td class="rank">
-            ${i + 1}
-          </td>
+                <td class="rank">
+                    ${i + 1}
+                </td>
 
-          <td class="rank">
-            ${escapeHtml(
-              x.value
-            )}
-          </td>
+                <td class="rank">
+                    ${escapeHtml(x.panel)}
+                </td>
 
-          <td>
-            ${x.frequency}
-          </td>
+                <td>
+                    ${Number(x.frequency || 0)}
+                </td>
 
-          <td>
-            ${x.gap ?? "—"}
-          </td>
+                <td>
+                    ${Number(x.gap || 0)}
+                </td>
 
-          <td>
-            ${Number(
-              x.adaptive_score ??
-              x.score ??
-              0
-            ).toFixed(4)}
-          </td>
+                <td>
+                    ${Number(
+                        x.score || 0
+                    ).toFixed(2)}
+                </td>
 
-        </tr>
-        `
-      ).join("");
-
+            </tr>
+            `
+        ).join("");
 }
 
 
-function buildDigitRows(distribution){
-
-    const counter = {};
-
-    if(!distribution){
-        return [];
-    }
-
-    Object.values(
-      distribution
-    ).forEach(
-      position => {
-
-        Object.entries(
-          position
-        ).forEach(
-          ([digit,count]) => {
-
-            counter[digit] =
-              (counter[digit] || 0)
-              + count;
-
-          }
-        );
-
-      }
-    );
-
-    return Object.entries(
-      counter
-    )
-    .sort(
-      (a,b) =>
-        Number(a[0]) -
-        Number(b[0])
-    )
-    .map(
-      ([digit,count]) => ({
-        digit,
-        count
-      })
-    );
-
-}
-
+/* ==========================================================
+   DIGITS
+   ========================================================== */
 
 function renderDigits(rows){
 
-    document.getElementById(
-      "digits"
-    ).innerHTML =
-      rows.map(
-        x => `
-        <tr>
+    const tbody =
+        document.getElementById(
+            "digits"
+        );
 
-          <td>
-            ${escapeHtml(
-              x.digit
-            )}
-          </td>
+    if(
+        !Array.isArray(rows) ||
+        rows.length === 0
+    ){
 
-          <td>
-            ${x.count}
-          </td>
+        tbody.innerHTML =
+            `<tr>
+                <td colspan="2">
+                    No digit data.
+                </td>
+            </tr>`;
 
-        </tr>
-        `
-      ).join("");
+        return;
+    }
 
+    tbody.innerHTML =
+        rows.map(
+            x => `
+            <tr>
+
+                <td>
+                    ${escapeHtml(x.digit)}
+                </td>
+
+                <td>
+                    ${Number(x.count || 0)}
+                </td>
+
+            </tr>
+            `
+        ).join("");
 }
 
+
+/* ==========================================================
+   CHART
+   ========================================================== */
 
 function renderChart(rows){
 
+    if(!Array.isArray(rows)){
+        return;
+    }
+
     const labels =
-      (rows || [])
-      .slice(0,10)
-      .map(
-        x =>
-          x.value
-      );
+        rows.map(
+            x => x.value
+        );
 
     const values =
-      (rows || [])
-      .slice(0,10)
-      .map(
-        x =>
-          x.frequency
-      );
+        rows.map(
+            x => Number(
+                x.count || 0
+            )
+        );
 
     if(chart){
         chart.destroy();
+        chart = null;
+    }
+
+    const canvas =
+        document.getElementById(
+            "chart"
+        );
+
+    if(!canvas){
+        return;
     }
 
     chart =
-      new Chart(
-        document.getElementById(
-          "chart"
-        ),
-        {
-          type:"bar",
+        new Chart(
+            canvas,
+            {
+                type:"bar",
 
-          data:{
-            labels:labels,
+                data:{
+                    labels:labels,
 
-            datasets:[
-              {
-                label:
-                  "Historical occurrences",
+                    datasets:[
+                        {
+                            label:
+                                "Historical occurrences",
 
-                data:values,
+                            data:values,
 
-                backgroundColor:
-                  "#00e5ff99",
+                            backgroundColor:
+                                "#00e5ff99",
 
-                borderColor:
-                  "#00e5ff",
+                            borderColor:
+                                "#00e5ff",
 
-                borderWidth:1
-              }
-            ]
-          },
+                            borderWidth:1
+                        }
+                    ]
+                },
 
-          options:{
-            responsive:true,
+                options:{
+                    responsive:true,
 
-            maintainAspectRatio:false,
+                    maintainAspectRatio:false,
 
-            plugins:{
-              legend:{
-                labels:{
-                  color:"#dffcff"
+                    plugins:{
+                        legend:{
+                            labels:{
+                                color:
+                                    "#dffcff"
+                            }
+                        }
+                    },
+
+                    scales:{
+                        x:{
+                            ticks:{
+                                color:
+                                    "#8195ac"
+                            }
+                        },
+
+                        y:{
+                            ticks:{
+                                color:
+                                    "#8195ac"
+                            }
+                        }
+                    }
                 }
-              }
-            },
-
-            scales:{
-              x:{
-                ticks:{
-                  color:"#8195ac"
-                }
-              },
-
-              y:{
-                ticks:{
-                  color:"#8195ac"
-                }
-              }
             }
-          }
-        }
-      );
-
+        );
 }
 
 
-function renderBacktest(analysis){
+/* ==========================================================
+   BACKTEST
+   ========================================================== */
+
+function renderBacktest(result){
 
     const box =
-      document.getElementById(
-        "backtest"
-      );
+        document.getElementById(
+            "backtest"
+        );
 
-    const result =
-      analysis?.backtest;
-
-    if(!result ||
-       !result.available){
+    if(
+        !result ||
+        !result.available
+    ){
 
         box.innerHTML =
-          `<span class="warning">
-            ${escapeHtml(
-              result?.message ||
-              "Not enough historical data."
-            )}
-          </span>`;
+            `<span class="warning">
+                ${escapeHtml(
+                    result?.message ||
+                    "Not enough historical data."
+                )}
+            </span>`;
 
         return;
     }
 
     box.innerHTML = `
-      Trials:
-      <strong>
-        ${result.trials}
-      </strong>
+        Trials:
+        <strong>
+            ${Number(result.trials || 0)}
+        </strong>
 
-      <br>
+        <br>
 
-      Top-10 historical hits:
-      <strong>
-        ${result.top10_hits}
-      </strong>
+        Top-10 historical hits:
+        <strong>
+            ${Number(
+                result.top10_hits || 0
+            )}
+        </strong>
 
-      <br>
+        <br>
 
-      Historical hit rate:
-      <strong>
-        ${Number(
-          result.hit_rate
-        ).toFixed(2)}%
-      </strong>
+        Historical hit rate:
+        <strong>
+            ${Number(
+                result.hit_rate || 0
+            ).toFixed(2)}%
+        </strong>
 
-      <br><br>
+        <br><br>
 
-      <span class="warning">
-        ${escapeHtml(
-          result.warning ||
-          "Historical backtest only."
-        )}
-      </span>
+        <span class="warning">
+            ${escapeHtml(
+                result.warning ||
+                "Historical backtest only."
+            )}
+        </span>
     `;
-
 }
 
 
-function renderAdaptive(adaptive){
-
-    if(!adaptive){
-        return;
-    }
-
-    const training =
-      adaptive.training || {};
-
-    const model =
-      adaptive.analysis || {};
-
-    const state =
-      model.model_status ||
-      "unknown";
-
-    document.getElementById(
-      "modelStatus"
-    ).textContent =
-      state;
-
-    document.getElementById(
-      "trainingRuns"
-    ).textContent =
-      model.training_runs ??
-      "—";
-
-    document.getElementById(
-      "modelObservations"
-    ).textContent =
-      model.observations ??
-      "—";
-
-    document.getElementById(
-      "validatedScore"
-    ).textContent =
-      model.trained_score ??
-      "—";
-}
-
+/* ==========================================================
+   HTML ESCAPE
+   ========================================================== */
 
 function escapeHtml(value){
 
     return String(value)
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
-
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
+
+/* ==========================================================
+   DATABASE STATUS
+   ========================================================== */
 
 async function loadDatabase(){
 
     try{
 
-        const response =
-          await fetch(
-            "/api/database"
-          );
-
-        const data =
-          await response.json();
-
-        document.getElementById(
-          "records"
-        ).textContent =
-          data.records;
-
-    }catch(error){
-
-        console.log(
-          "Database status unavailable"
-        );
-
-    }
-
-}
-
-
-async function loadModel(){
-
-    try{
-
-        const market =
-          document.getElementById(
-            "market"
-          ).value;
+        const endpoint =
+            new URL(
+                "/api/database",
+                window.location.origin
+            ).toString();
 
         const response =
-          await fetch(
-            "/api/model/" +
-            encodeURIComponent(
-              market
-            )
-          );
+            await fetch(
+                endpoint,
+                {
+                    headers:{
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
 
         const data =
-          await response.json();
+            await readJsonResponse(
+                response
+            );
 
-        if(!data.ok){
-            return;
+        if(
+            data &&
+            data.ok
+        ){
+
+            document.getElementById(
+                "records"
+            ).textContent =
+                data.records ?? 0;
         }
 
-        const model =
-          data.model || {};
-
-        document.getElementById(
-          "modelStatus"
-        ).textContent =
-          model.status || "untrained";
-
-        document.getElementById(
-          "trainingRuns"
-        ).textContent =
-          model.training_runs ?? 0;
-
-        document.getElementById(
-          "modelObservations"
-        ).textContent =
-          model.observations_used ?? 0;
-
-        document.getElementById(
-          "validatedScore"
-        ).textContent =
-          model.score ?? 0;
-
     }catch(error){
 
         console.log(
-          "Model status unavailable"
+            "Database status unavailable:",
+            error
         );
-
     }
-
 }
 
 
-document.getElementById(
-  "market"
-).addEventListener(
-  "change",
-  loadModel
-);
-
+/* ==========================================================
+   START
+   ========================================================== */
 
 loadDatabase();
-loadModel();
 
 </script>
 
 </body>
-
 </html>
 """
 
@@ -2077,7 +2092,6 @@ loadModel();
 
 @app.get("/")
 def home():
-
     return render_template_string(
         HTML
     )
@@ -2088,7 +2102,6 @@ def home():
 # ============================================================
 
 init_db()
-migrate_legacy_database()
 
 
 if __name__ == "__main__":
